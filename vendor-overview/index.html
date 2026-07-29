@@ -1091,35 +1091,31 @@ function mapWithGrowth(obj, currentYear, priorYear) {
   }).sort((a, b) => b.netSales - a.netSales);
 }
 
-// Worksheets can be named anything — classified purely by which fields they
-// carry (checked via the lightweight getSummaryColumnsAsync, before paying
-// for a full getSummaryDataReaderAsync row fetch) so renaming/reorganizing
-// worksheets on the dashboard later never breaks this matching:
+// Worksheets can be named anything — classified purely by which fields each
+// one carries (from the same getSummaryDataReaderAsync fetch used to pull its
+// rows), so renaming or reorganizing worksheets on the dashboard later never
+// breaks this matching:
 //   - has Article Id + (Brand or Mch1 Desc)      -> "Detail"
 //   - has Article Id + Vendor Name (no Brand/Mch1) -> "AllVendors"
 //   - no Article Id, has Sls Ofc Desc            -> "Trend"
 async function classifyWorksheets(worksheets) {
-  const signatures = [];
+  // Fetched one at a time — concurrent getSummaryDataReaderAsync calls across
+  // worksheets can trip Tableau's native bridge into a generic ExecuteCommand error.
+  const fetched = [];
   for (const ws of worksheets) {
-    const columns = await ws.getSummaryColumnsAsync();
-    const fields = new Set(columns.map((c) => unwrapCaption(c.fieldName)));
-    signatures.push({ ws, fields });
+    fetched.push(await fetchWorksheetRows(ws));
   }
-  const has = (fields, key) => fields.has(FIELD[key]);
-  let trendWs = null, detailWs = null, allVendorsWs = null;
-  for (const { ws, fields } of signatures) {
-    if (has(fields, 'ARTICLE_ID') && (has(fields, 'BRAND') || has(fields, 'MCH1'))) {
-      if (!detailWs) detailWs = ws;
-    } else if (has(fields, 'ARTICLE_ID') && has(fields, 'VENDOR')) {
-      if (!allVendorsWs) allVendorsWs = ws;
-    } else if (has(fields, 'OFFICE') && !has(fields, 'ARTICLE_ID')) {
-      if (!trendWs) trendWs = ws;
+  const has = (colIndex, key) => colIndex[FIELD[key]] !== undefined;
+  const result = {};
+  for (const f of fetched) {
+    if (has(f.colIndex, 'ARTICLE_ID') && (has(f.colIndex, 'BRAND') || has(f.colIndex, 'MCH1'))) {
+      if (!result.detail) result.detail = f;
+    } else if (has(f.colIndex, 'ARTICLE_ID') && has(f.colIndex, 'VENDOR')) {
+      if (!result.allVendors) result.allVendors = f;
+    } else if (has(f.colIndex, 'OFFICE') && !has(f.colIndex, 'ARTICLE_ID')) {
+      if (!result.trend) result.trend = f;
     }
   }
-  const result = {};
-  if (trendWs) result.trend = await fetchWorksheetRows(trendWs);
-  if (detailWs) result.detail = await fetchWorksheetRows(detailWs);
-  if (allVendorsWs) result.allVendors = await fetchWorksheetRows(allVendorsWs);
   return result;
 }
 
