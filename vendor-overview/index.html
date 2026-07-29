@@ -1145,11 +1145,8 @@ function computeTrendPart(rows, colIndex) {
   }
   const yearList = Array.from(years).sort();
   if (!yearList.length) {
-    const idx = colIndex[FIELD.DATE];
-    const sample = rows[0] ? rows[0][idx] : undefined;
     throw new Error('No dated rows found in the Trend worksheet. Diagnostic: rows=' + rows.length
-      + ', dateColumnIndex=' + idx + ', sampleValue=' + JSON.stringify(sample && sample.value)
-      + ', sampleFormatted=' + JSON.stringify(sample && sample.formattedValue));
+      + ', looking for field "' + FIELD.DATE + '", actual fields on this worksheet: [' + Object.keys(colIndex).join(' | ') + ']');
   }
   const currentYear = yearList[yearList.length - 1];
   const priorYear = String(Number(currentYear) - 1);
