@@ -1077,6 +1077,11 @@ function formattedVal(row, colIndex, field) {
   const dv = row[idx];
   return dv ? dv.formattedValue : undefined;
 }
+// A discrete custom date part's DataValue.value is often a small internal
+// ordinal (0, 1, 2, ...) rather than a real timestamp — the earliest period
+// in the data can legitimately be 0, so this must not be treated as falsy
+// the way a plain `if (!dateVal)` check would.
+function hasDate(dateVal) { return dateVal !== undefined && dateVal !== null; }
 function addYear(obj, key, year, netSales, qty) {
   if (!obj[key]) obj[key] = {};
   if (!obj[key][year]) obj[key][year] = { netSales: 0, qty: 0 };
@@ -1124,7 +1129,7 @@ function computeTrendPart(rows, colIndex) {
   let years = new Set();
   for (const row of rows) {
     const dateVal = val(row, colIndex, FIELD.DATE);
-    if (!dateVal) continue;
+    if (!hasDate(dateVal)) continue;
     const { y, m } = toYearMonth(dateVal, formattedVal(row, colIndex, FIELD.DATE));
     const year = String(y);
     years.add(year);
@@ -1185,7 +1190,7 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
   let vendorName = null;
   for (const row of rows) {
     const dateVal = val(row, colIndex, FIELD.DATE);
-    if (!dateVal) continue;
+    if (!hasDate(dateVal)) continue;
     const y = extractYear(dateVal, formattedVal(row, colIndex, FIELD.DATE));
     if (y === null) continue;
     const year = String(y);
@@ -1297,7 +1302,7 @@ function computeAllVendorsPart(rows, colIndex, currentYear, priorYear, thisVendo
   const skuSetsByVendor = {};
   for (const row of rows) {
     const dateVal = val(row, colIndex, FIELD.DATE);
-    if (!dateVal) continue;
+    if (!hasDate(dateVal)) continue;
     const y = extractYear(dateVal, formattedVal(row, colIndex, FIELD.DATE));
     if (y === null) continue;
     const year = String(y);
