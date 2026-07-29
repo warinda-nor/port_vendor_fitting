@@ -50,7 +50,7 @@ Dashboard Vendor Fitting.png     ภาพ mockup อ้างอิงสำห
 2. ลาก object **Extension** จากแผง Objects มาวางในตำแหน่งที่ต้องการ
 3. เลือก **My Extensions → Access Local Extensions** แล้วเลือกไฟล์ `vendor-overview/VendorOverview.trex`
    (หรือถ้า deploy ผ่าน GitHub Pages แล้ว จะสามารถแชร์ไฟล์ `.trex` นี้ให้คนอื่นใช้ได้เลยโดยไม่ต้องมีไฟล์ index.html อยู่ในเครื่อง เพราะ extension จะไปโหลดจาก URL บน GitHub Pages โดยตรง)
-4. Dashboard ต้องมี Worksheet ทั้งหมด **3 ตัว** ตามสเปกด้านล่าง (ตั้งชื่อ Worksheet ให้มีคำว่า `Trend`, `Detail`, `AllVendors` ตามลำดับ — extension จะจับคู่ worksheet จากชื่อแบบไม่สนตัวพิมพ์เล็ก/ใหญ่)
+4. Dashboard ต้องมี Worksheet ทั้งหมด **3 ตัว** ตามสเปกด้านล่าง — **ตั้งชื่อ Worksheet เป็นอะไรก็ได้ตามใจ** (เช่น "Control", "Sheet 1" ก็ได้) เพราะ extension จะดูจาก **field ที่มีอยู่ใน worksheet นั้นๆ** ไม่ได้ดูจากชื่อ — สำคัญคือ field ต้องครบตามสเปกของแต่ละ worksheet ด้านล่าง จะมี worksheet อื่นอยู่ในดาชบอร์ดเพิ่มเติม (เช่น sheet ไว้ทำ filter action) ก็ไม่กระทบ extension จะข้ามไปเอง
 5. ใส่ Quick Filter สำหรับ field **Vendor Name** ไว้บน Dashboard (ตัวกรอง Vendor ต้องกรองแค่ worksheet "Trend" และ "Detail" เท่านั้น — **ห้ามกรอง** worksheet "AllVendors" เพราะต้องใช้ข้อมูลของ vendor ทุกรายเพื่อคำนวณ Rank/Share)
 
 ### สเปก field ที่แต่ละ Worksheet ต้องมี

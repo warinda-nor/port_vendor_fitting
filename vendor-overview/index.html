@@ -989,8 +989,10 @@ function renderDashboard(DATA) {
 }
 
 /* ================= LIVE TABLEAU DATA PIPELINE =================
- * Three worksheets, classified by name (case-insensitive substring match) so
- * the dashboard author can lay them out in any order:
+ * Three worksheets, classified by which fields they carry (see
+ * classifyWorksheets below) rather than by name — worksheets can be named or
+ * renamed to anything, and any other unrelated worksheets on the dashboard
+ * (e.g. one used only to host filter actions) are simply ignored:
  *   - "Trend"      Month-grain, filtered to the selected Vendor. Feeds the
  *                   KPI tiles, monthly trend chart and Sales Office bars.
  *   - "Detail"     Year-grain with Article Id, filtered to the selected
@@ -1089,18 +1091,35 @@ function mapWithGrowth(obj, currentYear, priorYear) {
   }).sort((a, b) => b.netSales - a.netSales);
 }
 
+// Worksheets can be named anything — classified purely by which fields they
+// carry (checked via the lightweight getSummaryColumnsAsync, before paying
+// for a full getSummaryDataReaderAsync row fetch) so renaming/reorganizing
+// worksheets on the dashboard later never breaks this matching:
+//   - has Article Id + (Brand or Mch1 Desc)      -> "Detail"
+//   - has Article Id + Vendor Name (no Brand/Mch1) -> "AllVendors"
+//   - no Article Id, has Sls Ofc Desc            -> "Trend"
 async function classifyWorksheets(worksheets) {
-  const byName = { trend: null, detail: null, allVendors: null };
+  const signatures = [];
   for (const ws of worksheets) {
-    const n = ws.name.toLowerCase();
-    if (n.includes('allvendor') || n.includes('all vendor')) byName.allVendors = ws;
-    else if (n.includes('detail')) byName.detail = ws;
-    else if (n.includes('trend')) byName.trend = ws;
+    const columns = await ws.getSummaryColumnsAsync();
+    const fields = new Set(columns.map((c) => unwrapCaption(c.fieldName)));
+    signatures.push({ ws, fields });
+  }
+  const has = (fields, key) => fields.has(FIELD[key]);
+  let trendWs = null, detailWs = null, allVendorsWs = null;
+  for (const { ws, fields } of signatures) {
+    if (has(fields, 'ARTICLE_ID') && (has(fields, 'BRAND') || has(fields, 'MCH1'))) {
+      if (!detailWs) detailWs = ws;
+    } else if (has(fields, 'ARTICLE_ID') && has(fields, 'VENDOR')) {
+      if (!allVendorsWs) allVendorsWs = ws;
+    } else if (has(fields, 'OFFICE') && !has(fields, 'ARTICLE_ID')) {
+      if (!trendWs) trendWs = ws;
+    }
   }
   const result = {};
-  for (const key of ['trend', 'detail', 'allVendors']) {
-    if (byName[key]) result[key] = await fetchWorksheetRows(byName[key]);
-  }
+  if (trendWs) result.trend = await fetchWorksheetRows(trendWs);
+  if (detailWs) result.detail = await fetchWorksheetRows(detailWs);
+  if (allVendorsWs) result.allVendors = await fetchWorksheetRows(allVendorsWs);
   return result;
 }
 
@@ -1348,9 +1367,9 @@ async function loadAndRenderLive() {
   try {
     showStatus('Loading data from Tableau…', false);
     const { trend, detail, allVendors } = await classifyWorksheets(tableau.extensions.dashboardContent.dashboard.worksheets);
-    if (!trend) throw new Error('Could not find a worksheet named "Trend".');
-    if (!detail) throw new Error('Could not find a worksheet named "Detail".');
-    if (!allVendors) throw new Error('Could not find a worksheet named "AllVendors".');
+    if (!trend) throw new Error('Could not find the "Trend" worksheet — need a worksheet with "' + FIELD.OFFICE + '" and no "' + FIELD.ARTICLE_ID + '".');
+    if (!detail) throw new Error('Could not find the "Detail" worksheet — need a worksheet with "' + FIELD.ARTICLE_ID + '" and "' + FIELD.BRAND + '" (or "' + FIELD.MCH1 + '").');
+    if (!allVendors) throw new Error('Could not find the "AllVendors" worksheet — need a worksheet with "' + FIELD.ARTICLE_ID + '" and "' + FIELD.VENDOR + '" but no "' + FIELD.BRAND + '"/"' + FIELD.MCH1 + '".');
     const trendPart = computeTrendPart(trend.rows, trend.colIndex);
     const detailPart = computeDetailPart(detail.rows, detail.colIndex, trendPart.currentYear, trendPart.priorYear);
     const allVendorsPart = computeAllVendorsPart(allVendors.rows, allVendors.colIndex, trendPart.currentYear, trendPart.priorYear, detailPart.vendorName);
