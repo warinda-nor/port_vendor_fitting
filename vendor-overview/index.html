@@ -1,0 +1,1489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendor Business Review</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:            #f9f9f7;
+    --surface-1:       #fcfcfb;
+    --text-primary:    #0b0b0b;
+    --text-secondary:  #52514e;
+    --text-muted:      #898781;
+    --grid:            #e1e0d9;
+    --baseline:        #c3c2b7;
+    --border:          rgba(11,11,11,0.10);
+    --series-accent:   #2a78d6;
+    --series-accent-wash: rgba(42,120,214,0.16);
+    --series-prior:    #c3c2b7;
+    --series-prior-wash: rgba(137,135,129,0.14);
+    --series-2:        #008300;
+    --series-3:        #e87ba4;
+    --series-4:        #eda100;
+    --good:            #006300;
+    --critical:        #d03b3b;
+    --navy:            #14213d;
+    --navy-2:          #1c2d52;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:            #0d0d0d;
+      --surface-1:       #1a1a19;
+      --text-primary:    #ffffff;
+      --text-secondary:  #c3c2b7;
+      --text-muted:      #898781;
+      --grid:            #2c2c2a;
+      --baseline:        #383835;
+      --border:          rgba(255,255,255,0.10);
+      --series-accent:   #3987e5;
+      --series-accent-wash: rgba(57,135,229,0.20);
+      --series-prior:    #52514e;
+      --series-prior-wash: rgba(137,135,129,0.18);
+      --series-2:        #1fae1f;
+      --series-3:        #d55181;
+      --series-4:        #c98500;
+      --good:            #0ca30c;
+      --critical:        #e66767;
+      --navy:            #0c1424;
+      --navy-2:          #14213d;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:            #0d0d0d;
+    --surface-1:       #1a1a19;
+    --text-primary:    #ffffff;
+    --text-secondary:  #c3c2b7;
+    --text-muted:      #898781;
+    --grid:            #2c2c2a;
+    --baseline:        #383835;
+    --border:          rgba(255,255,255,0.10);
+    --series-accent:   #3987e5;
+    --series-accent-wash: rgba(57,135,229,0.20);
+    --series-prior:    #52514e;
+    --series-prior-wash: rgba(137,135,129,0.18);
+    --series-2:        #1fae1f;
+    --series-3:        #d55181;
+    --series-4:        #c98500;
+    --good:            #0ca30c;
+    --critical:        #e66767;
+    --navy:            #0c1424;
+    --navy-2:          #14213d;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1600px; margin: 0 auto; padding: 0 0 32px; }
+
+  header.topbar {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+    color: #fff;
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand .mark {
+    width: 46px; height: 46px; border-radius: 10px;
+    background: rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    flex: none;
+  }
+  .brand h1 { font-size: 22px; margin: 0; letter-spacing: 0.02em; font-weight: 700; }
+  .brand p { margin: 3px 0 0; font-size: 14px; color: rgba(255,255,255,0.72); }
+  .asof { font-size: 13.5px; color: rgba(255,255,255,0.65); text-align: right; white-space: nowrap; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+    padding: 20px 24px 0;
+  }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    min-width: 0;
+  }
+  .card h3 {
+    margin: 0 0 2px;
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+  .card p.sub { margin: 0 0 12px; font-size: 12.5px; color: var(--text-muted); }
+
+  .col-2 { grid-column: span 2; }
+  .col-3 { grid-column: span 3; }
+  .col-4 { grid-column: span 4; }
+  .col-5 { grid-column: span 5; }
+  .col-6 { grid-column: span 6; }
+  .col-7 { grid-column: span 7; }
+  .col-8 { grid-column: span 8; }
+  .col-12 { grid-column: span 12; }
+  @media (max-width: 1100px) {
+    .col-2, .col-3, .col-4, .col-5, .col-6, .col-7, .col-8 { grid-column: span 12; }
+  }
+
+  /* ---------- vendor identity card ---------- */
+  .vendor-name-th { font-size: 24px; font-weight: 700; line-height: 1.3; margin-top: 6px; }
+  .vendor-name-en { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .vendor-chips-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 14px; }
+  .vendor-chips-divider { width: 1px; height: 18px; background: var(--grid); margin: 0 4px; flex: none; }
+  .vendor-brand-chip {
+    font-size: 11.5px; font-weight: 700; color: var(--series-accent);
+    background: var(--series-accent-wash); border-radius: 20px; padding: 3px 10px;
+  }
+  .vendor-mch2-chip {
+    font-size: 11.5px; font-weight: 600; color: var(--text-secondary);
+    background: var(--grid); border-radius: 20px; padding: 3px 10px;
+  }
+
+  /* ---------- KPI strip (5 measures in one card) ---------- */
+  #kpi-strip.kpi-strip { padding: 24px 26px; }
+  .kpi-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
+  @media (max-width: 900px) { .kpi-strip { grid-template-columns: repeat(2, 1fr); } }
+  .kpi-cell { min-width: 0; border-left: 1px solid var(--grid); padding-left: 20px; }
+  .kpi-cell:first-child { border-left: none; padding-left: 0; }
+  .kpi-label { font-size: 13.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700; }
+  .kpi-body { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: 8px; }
+  .kpi-value { font-size: 30px; font-weight: 700; line-height: 1.1; }
+  .kpi-delta { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+  .kpi-delta.good { color: var(--good); }
+  .kpi-delta.bad { color: var(--critical); }
+  .kpi-left { flex: none; }
+  .kpi-spark { flex: 1 1 auto; min-width: 70px; height: 44px; margin-left: 10px; cursor: crosshair; position: relative; }
+  .kpi-prior { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ---------- vendor snapshot list ---------- */
+  .snap-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13px; color: var(--text-secondary); border-bottom: 1px dashed var(--grid); }
+  .snap-row:last-child { border-bottom: none; }
+  .snap-row .v { font-weight: 700; color: var(--text-primary); }
+
+  /* ---------- ranking bar list ---------- */
+  .bar-row { display: grid; grid-template-columns: 128px 1fr 82px 68px; align-items: center; gap: 10px; padding: 6px 0; }
+  .bar-row .lbl { font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { position: relative; height: 16px; background: var(--grid); border-radius: 4px; }
+  .bar-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; cursor: pointer; }
+  .bar-val { font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+  .bar-delta { font-size: 12px; font-weight: 700; text-align: right; white-space: nowrap; }
+  .bar-delta.good { color: var(--good); }
+  .bar-delta.bad { color: var(--critical); }
+  .bar-list-header { padding-bottom: 5px; border-bottom: 1px solid var(--grid); margin-bottom: 3px; }
+  .col-header { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); font-weight: 700; text-align: right; }
+
+  .legend-key { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* ---------- trend chart ---------- */
+  .trend-legend { display: flex; gap: 16px; margin-bottom: 6px; font-size: 12.5px; color: var(--text-secondary); }
+  .legend-line { width: 14px; height: 2px; display: inline-block; border-radius: 1px; }
+
+  /* ---------- donut chart ---------- */
+  .donut-top-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+
+  .detail-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 10.5px; }
+  .detail-table th { text-align: right; font-size: 9px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; padding: 3px 5px; border-bottom: 1px solid var(--grid); }
+  .detail-table th:first-child, .detail-table td:first-child { text-align: left; }
+  .detail-table td { text-align: right; padding: 3px 5px; border-bottom: 1px solid var(--grid); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .detail-table:not(.trend-detail) td { font-size: 11px; }
+  .detail-table tr:hover td { background: var(--series-accent-wash); }
+  .detail-table tfoot td { font-weight: 700; color: var(--text-primary); border-top: 1px solid var(--baseline); border-bottom: none; }
+  .detail-table.trend-detail { margin-top: 14px; font-size: 12px; }
+  .detail-table.trend-detail th, .detail-table.trend-detail td { padding: 6px 10px; }
+
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.data-table th {
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text-muted); font-weight: 700; padding: 7px 9px; border-bottom: 1px solid var(--grid);
+  }
+  table.data-table td { padding: 8px 9px; border-bottom: 1px solid var(--grid); color: var(--text-secondary); }
+  table.data-table td.num, table.data-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.data-table tr:hover td { background: var(--series-accent-wash); }
+  table.data-table td.rank { color: var(--text-muted); width: 26px; }
+  table.data-table td.name { color: var(--text-primary); font-weight: 600; max-width: 300px; }
+  table.data-table tfoot td { font-weight: 700; color: var(--text-primary); border-top: 1px solid var(--baseline); }
+
+
+  #tooltip {
+    position: fixed; pointer-events: none; z-index: 60;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 11px; font-size: 12.5px; color: var(--text-primary);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    opacity: 0; transition: opacity 0.08s;
+    max-width: 260px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  #tooltip.show { opacity: 1; }
+  #tooltip .tt-title { font-weight: 700; margin-bottom: 5px; }
+  #tooltip .tt-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+  #tooltip .tt-key { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+  #tooltip .tt-swatch { width: 11px; height: 2px; display: inline-block; }
+  #tooltip .tt-val { font-weight: 700; }
+
+  #status-banner {
+    padding: 9px 20px; font-size: 13px; text-align: center; color: #fff; display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 12h4l2-4 4 8 2-4h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <h1 id="title">VENDOR BUSINESS REVIEW</h1>
+        <p id="subtitle">Vendor Performance</p>
+      </div>
+    </div>
+    <div class="asof" id="asof">Data as of : —</div>
+  </header>
+
+  <div id="status-banner"></div>
+
+  <div class="grid">
+    <div class="card col-6" id="card-vendor"></div>
+    <div class="card col-6" id="card-snapshot"></div>
+
+    <div class="card col-12" id="kpi-strip"></div>
+
+    <div class="card col-4" id="chart-office"></div>
+    <div class="card col-8" id="chart-trend"></div>
+
+    <div class="card col-3" id="chart-brand"></div>
+    <div class="card col-3" id="table-channel"></div>
+    <div class="card col-3" id="chart-productGroup"></div>
+    <div class="card col-3" id="chart-priceSegment"></div>
+
+    <div class="card col-12" id="table-hero"></div>
+    <div class="card col-12" id="table-heroQty"></div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script src="../tableau.extensions.1.latest.js"></script>
+<script>
+
+/* ================= formatting helpers ================= */
+function fmtCompact(n, digits) {
+  digits = digits === undefined ? 2 : digits;
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return (n/1e9).toFixed(digits) + 'B';
+  if (abs >= 1e6) return (n/1e6).toFixed(digits) + 'M';
+  if (abs >= 1e3) return (n/1e3).toFixed(digits) + 'K';
+  return n.toFixed(0);
+}
+function fmtInt(n) { return Math.round(n).toLocaleString('en-US'); }
+function fmtMoney(n) { return fmtCompact(n, 2); }
+function fmtPct(n, digits) {
+  digits = digits === undefined ? 1 : digits;
+  const sign = n > 0 ? '+' : '';
+  return sign + (n*100).toFixed(digits) + '%';
+}
+// For plain share-of-total percentages (not deltas) — no +/- direction sign.
+function fmtShare(n, digits) {
+  digits = digits === undefined ? 1 : digits;
+  return (n*100).toFixed(digits) + '%';
+}
+function growth(a, b) { return b ? (a - b) / b : 0; }
+function growthClass(g) { return g >= 0 ? 'good' : 'bad'; }
+function arrow(g) { return g >= 0 ? '▲' : '▼'; }
+function growthCell(g) { return { text: arrow(g) + ' ' + fmtPct(g), color: g >= 0 ? 'var(--good)' : 'var(--critical)' }; }
+function readableTextColor(hex) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!m) return '#ffffff';
+  const [r, g, b] = [m[1], m[2], m[3]].map(x => parseInt(x, 16) / 255);
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return lum > 0.6 ? '#0b0b0b' : '#ffffff';
+}
+const CAT_COLORS = ['var(--series-accent)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)', 'var(--series-5)'];
+function resolveVar(cssVar) {
+  return getComputedStyle(document.documentElement).getPropertyValue(cssVar.replace('var(', '').replace(')', '')).trim();
+}
+
+/* ================= tooltip ================= */
+const tooltipEl = document.getElementById('tooltip');
+function showTooltip(x, y, buildFn) {
+  tooltipEl.innerHTML = '';
+  buildFn(tooltipEl);
+  tooltipEl.classList.add('show');
+  const rect = tooltipEl.getBoundingClientRect();
+  let left = x + 14, top = y + 14;
+  if (left + rect.width > window.innerWidth - 8) left = x - rect.width - 14;
+  if (top + rect.height > window.innerHeight - 8) top = y - rect.height - 14;
+  tooltipEl.style.left = left + 'px';
+  tooltipEl.style.top = top + 'px';
+}
+function hideTooltip() { tooltipEl.classList.remove('show'); }
+function ttTitle(parent, text) {
+  const t = document.createElement('div'); t.className = 'tt-title'; t.textContent = text; parent.appendChild(t);
+}
+function ttRow(parent, keyLabel, keyColor, value, valueColor) {
+  const row = document.createElement('div'); row.className = 'tt-row';
+  const key = document.createElement('span'); key.className = 'tt-key';
+  if (keyColor) {
+    const sw = document.createElement('span'); sw.className = 'tt-swatch'; sw.style.background = keyColor;
+    key.appendChild(sw);
+  }
+  const keyText = document.createElement('span'); keyText.textContent = keyLabel; key.appendChild(keyText);
+  const val = document.createElement('span'); val.className = 'tt-val'; val.textContent = value;
+  if (valueColor) val.style.color = valueColor;
+  row.appendChild(key); row.appendChild(val);
+  parent.appendChild(row);
+}
+
+function clearAndRun(elementId, fn) {
+  const el = document.getElementById(elementId);
+  el.innerHTML = '';
+  fn(el);
+}
+
+/* ================= product hierarchy (Group / MCH2 / MCH1) =================
+ * Group is not a column in the source data — it's a business regrouping of the
+ * "Mch1 Desc" field, defined in Data mapping.xlsx (sheet "แยกกลุ่มสีและประเภทสินค้า",
+ * columns D:Group / F:MCH1). "MCH2_Desc" is a separate, coarser column that
+ * already exists on every row (only 3 real values), so it's read directly
+ * instead of being derived. */
+const MCH1_TO_GROUP = {
+  'กระจกห้องน้ำ': 'ACCESSORIES', 'อุปกรณ์เสริมภายในห้องน้ำ': 'ACCESSORIES', 'อุปกรณ์แขวนผ้า': 'ACCESSORIES',
+  'อุปกรณ์จัดเก็บในห้องน้ำ': 'ACCESSORIES', 'อุปกรณ์สำหรับผู้สูงอายุ': 'ACCESSORIES',
+  'ก๊อกทรงสูง': 'FAUCET', 'ก๊อกบิเด้': 'FAUCET', 'ก๊อกยืนอาบ': 'FAUCET', 'ก๊อกล้างพื้น': 'FAUCET',
+  'ก๊อกอ่างล้างหน้า': 'FAUCET', 'ก๊อกอ่างอาบน้ำ': 'FAUCET', 'ฟลัชวาล์ว': 'FAUCET', 'วาล์ว': 'FAUCET', 'สายฉีดชำระ': 'FAUCET',
+  'ชุดฝักบัว': 'SHOWER', 'ฝักบัว': 'SHOWER',
+  'ตะแกรงท่อน้ำ': 'SPARE PARTS', 'ฝารองนั่ง': 'SPARE PARTS', 'อะไหล่ก๊อกน้ำ/ฝักบัว': 'SPARE PARTS',
+  'อะไหล่สุขภัณฑ์': 'SPARE PARTS', 'อะไหล่อ่างล้างหน้า': 'SPARE PARTS', 'อะไหล่อ่างอาบน้ำ': 'SPARE PARTS',
+};
+const GROUP_LABEL = { ACCESSORIES: 'Accessories', FAUCET: 'Faucet', SHOWER: 'Shower', 'SPARE PARTS': 'Spare Parts' };
+function groupFor(mch1) { return GROUP_LABEL[MCH1_TO_GROUP[mch1]] || 'Other'; }
+
+/* ================= vendor identity card ================= */
+function renderVendorCard(container, opts) {
+  const h = document.createElement('h3'); h.textContent = 'Vendor'; container.appendChild(h);
+  const name = document.createElement('div'); name.className = 'vendor-name-th'; name.textContent = opts.vendorName;
+  container.appendChild(name);
+  if (opts.vendorNameEn) {
+    const en = document.createElement('div'); en.className = 'vendor-name-en'; en.textContent = opts.vendorNameEn;
+    container.appendChild(en);
+  }
+  const chips = document.createElement('div'); chips.className = 'vendor-chips-row';
+  opts.brands.forEach((b) => {
+    const chip = document.createElement('span'); chip.className = 'vendor-brand-chip'; chip.textContent = b;
+    chips.appendChild(chip);
+  });
+  if (opts.mch2 && opts.mch2.length) {
+    const divider = document.createElement('span'); divider.className = 'vendor-chips-divider';
+    chips.appendChild(divider);
+    opts.mch2.forEach((m) => {
+      const chip = document.createElement('span'); chip.className = 'vendor-mch2-chip'; chip.textContent = m;
+      chips.appendChild(chip);
+    });
+  }
+  container.appendChild(chips);
+}
+
+/* ================= sparkline (current vs prior, by month) ================= */
+function smoothPathFor(pts) {
+  if (pts.length === 0) return '';
+  if (pts.length === 1) return 'M' + pts[0][0].toFixed(1) + ',' + pts[0][1].toFixed(1);
+  let d = 'M' + pts[0][0].toFixed(1) + ',' + pts[0][1].toFixed(1);
+  for (let k = 0; k < pts.length - 1; k++) {
+    const p0 = pts[Math.max(0, k - 1)], p1 = pts[k], p2 = pts[k + 1], p3 = pts[Math.min(pts.length - 1, k + 2)];
+    const cp1x = p1[0] + (p2[0] - p0[0]) / 6, cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const cp2x = p2[0] - (p3[0] - p1[0]) / 6, cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ' C' + cp1x.toFixed(1) + ',' + cp1y.toFixed(1) + ' ' + cp2x.toFixed(1) + ',' + cp2y.toFixed(1) + ' ' + p2[0].toFixed(1) + ',' + p2[1].toFixed(1);
+  }
+  return d;
+}
+function renderSparkline(curValues, priorValues, pointLabels, yearCur, yearPrior, formatValue) {
+  const w = 100, h = 30, pad = 4;
+  const all = curValues.concat(priorValues);
+  const min = Math.min.apply(null, all), max = Math.max.apply(null, all);
+  const range = (max - min) || 1;
+  const n = curValues.length;
+  const fmt = formatValue || fmtCompact;
+  function toPts(values) {
+    return values.map((v, i) => [pad + (n === 1 ? (w - pad * 2) / 2 : (i / (n - 1)) * (w - pad * 2)), h - pad - ((v - min) / range) * (h - pad * 2)]);
+  }
+  const curPts = toPts(curValues), priorPts = toPts(priorValues);
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.style.overflow = 'visible'; svg.style.display = 'block';
+  svg.style.position = 'absolute'; svg.style.inset = '0'; svg.style.width = '100%'; svg.style.height = '100%';
+
+  const baseY = h - pad;
+  const area = document.createElementNS(svgNS, 'path');
+  area.setAttribute('d', smoothPathFor(curPts) + ' L' + curPts[curPts.length-1][0].toFixed(1) + ',' + baseY + ' L' + curPts[0][0].toFixed(1) + ',' + baseY + ' Z');
+  area.setAttribute('fill', 'var(--series-accent-wash)'); area.setAttribute('stroke', 'none');
+  svg.appendChild(area);
+
+  const priorLine = document.createElementNS(svgNS, 'path');
+  priorLine.setAttribute('d', smoothPathFor(priorPts)); priorLine.setAttribute('fill', 'none');
+  priorLine.setAttribute('stroke', 'var(--series-prior)'); priorLine.setAttribute('stroke-width', '1.5');
+  priorLine.setAttribute('stroke-dasharray', '3 2'); priorLine.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(priorLine);
+
+  const line = document.createElementNS(svgNS, 'path');
+  line.setAttribute('d', smoothPathFor(curPts)); line.setAttribute('fill', 'none');
+  line.setAttribute('stroke', 'var(--series-accent)'); line.setAttribute('stroke-width', '2');
+  line.setAttribute('stroke-linecap', 'round'); line.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(line);
+
+  curPts.forEach((pt, i) => {
+    const dot = document.createElementNS(svgNS, 'circle');
+    dot.setAttribute('cx', pt[0]); dot.setAttribute('cy', pt[1]); dot.setAttribute('r', i === curPts.length - 1 ? 2.5 : 1.8);
+    dot.setAttribute('fill', 'var(--series-accent)'); dot.setAttribute('stroke', 'var(--surface-1)'); dot.setAttribute('stroke-width', '1');
+    svg.appendChild(dot);
+    const hit = document.createElementNS(svgNS, 'circle');
+    hit.setAttribute('cx', pt[0]); hit.setAttribute('cy', pt[1]); hit.setAttribute('r', 8); hit.setAttribute('fill', 'transparent');
+    hit.addEventListener('pointermove', (e) => {
+      showTooltip(e.clientX, e.clientY, (tt) => {
+        ttTitle(tt, pointLabels ? pointLabels[i] : 'Point ' + (i + 1));
+        ttRow(tt, String(yearCur), 'var(--series-accent)', fmt(curValues[i]));
+        ttRow(tt, String(yearPrior), 'var(--series-prior)', fmt(priorValues[i]));
+        const gspark = growth(curValues[i], priorValues[i]);
+        ttRow(tt, '%Growth', null, fmtPct(gspark), gspark >= 0 ? 'var(--good)' : 'var(--critical)');
+      });
+    });
+    hit.addEventListener('pointerleave', hideTooltip);
+    svg.appendChild(hit);
+  });
+  return svg;
+}
+
+/* ================= KPI strip (5 measures in one card) ================= */
+function renderKpiStrip(container, measures) {
+  container.className = 'card col-12 kpi-strip';
+  measures.forEach((m) => {
+    const cell = document.createElement('div'); cell.className = 'kpi-cell';
+    const lbl = document.createElement('div'); lbl.className = 'kpi-label'; lbl.textContent = m.label; cell.appendChild(lbl);
+    const body = document.createElement('div'); body.className = 'kpi-body';
+    const left = document.createElement('div'); left.className = 'kpi-left';
+    const val = document.createElement('div'); val.className = 'kpi-value'; val.textContent = m.formatValue(m.v2026); left.appendChild(val);
+    const g = growth(m.v2026, m.v2025);
+    const delta = document.createElement('div'); delta.className = 'kpi-delta ' + growthClass(g);
+    delta.textContent = arrow(g) + ' ' + fmtPct(g, 2); left.appendChild(delta);
+    const prior = document.createElement('div'); prior.className = 'kpi-prior';
+    prior.textContent = 'vs ' + m.priorLabel + ': ' + m.formatValue(m.v2025); left.appendChild(prior);
+    body.appendChild(left);
+    if (m.sparklineCur) {
+      const spark = document.createElement('div'); spark.className = 'kpi-spark';
+      spark.appendChild(renderSparkline(m.sparklineCur, m.sparklinePrior, m.sparkLabels, m.yearCur, m.yearPrior, m.formatValue));
+      body.appendChild(spark);
+    }
+    cell.appendChild(body);
+    container.appendChild(cell);
+  });
+}
+
+/* ================= vendor snapshot list ================= */
+function renderSnapshotCard(container, opts) {
+  const h = document.createElement('h3'); h.textContent = 'Vendor Snapshot'; container.appendChild(h);
+  const rows = [
+    ['Vendor Rank (Sales)', opts.rankSales + ' / ' + opts.activeVendorCount],
+    ['Vendor Rank (SKU)', opts.rankSku + ' / ' + opts.activeVendorCount],
+    ['Vendor Share (Sales)', fmtShare(opts.share, 1)],
+  ];
+  rows.forEach(([label, value]) => {
+    const row = document.createElement('div'); row.className = 'snap-row';
+    const lbl = document.createElement('span'); lbl.textContent = label;
+    const val = document.createElement('span'); val.className = 'v'; val.textContent = value;
+    row.appendChild(lbl); row.appendChild(val);
+    container.appendChild(row);
+  });
+}
+
+/* ================= ranked bar list (single measure, single accent) ================= */
+function renderBarList(container, title, sub, items, opts) {
+  opts = opts || {};
+  const h = document.createElement('h3'); h.textContent = title; container.appendChild(h);
+  const p = document.createElement('p'); p.className = 'sub'; p.textContent = sub; container.appendChild(p);
+  const maxVal = Math.max.apply(null, items.map((it) => it.netSales));
+  const totalVal = items.reduce((s, it) => s + it.netSales, 0);
+  function labelFor(it) { return opts.showShare ? it.k + ' (' + ((it.netSales / totalVal) * 100).toFixed(0) + '%)' : it.k; }
+
+  const headerRow = document.createElement('div'); headerRow.className = 'bar-row bar-list-header';
+  if (opts.labelWidth) headerRow.style.gridTemplateColumns = opts.labelWidth + 'px 1fr 82px 72px';
+  headerRow.appendChild(document.createElement('div'));
+  headerRow.appendChild(document.createElement('div'));
+  const netH = document.createElement('div'); netH.className = 'col-header'; netH.textContent = 'Net Sales'; headerRow.appendChild(netH);
+  const growH = document.createElement('div'); growH.className = 'col-header'; growH.textContent = '%Growth'; headerRow.appendChild(growH);
+  container.appendChild(headerRow);
+
+  let target = container;
+  if (opts.fillHeight) {
+    container.style.display = 'flex'; container.style.flexDirection = 'column';
+    target = document.createElement('div');
+    target.style.flex = '1'; target.style.display = 'flex'; target.style.flexDirection = 'column'; target.style.justifyContent = 'space-between';
+    container.appendChild(target);
+  }
+
+  items.forEach((it) => {
+    const g = it.growth !== undefined ? it.growth : growth(it.netSales, it.prior);
+    const color = (opts.colorFor && opts.colorFor(it)) || opts.color || 'var(--series-accent)';
+    const row = document.createElement('div'); row.className = 'bar-row';
+    if (opts.labelWidth) row.style.gridTemplateColumns = opts.labelWidth + 'px 1fr 82px 72px';
+    if (opts.compact) row.style.padding = '3px 0';
+    const lbl = document.createElement('div'); lbl.className = 'lbl'; lbl.textContent = labelFor(it); lbl.title = it.k;
+    if (opts.fontSize) lbl.style.fontSize = opts.fontSize + 'px';
+    row.appendChild(lbl);
+    const track = document.createElement('div'); track.className = 'bar-track';
+    track.style.height = (opts.trackHeight || (opts.compact ? 12 : 16)) + 'px';
+    const fill = document.createElement('div'); fill.className = 'bar-fill'; fill.style.background = color;
+    fill.style.width = Math.max(2, (it.netSales / maxVal) * 100) + '%';
+    const tooltipFn = (tt) => {
+      ttTitle(tt, it.k);
+      ttRow(tt, 'Net Sales', color, fmtMoney(it.netSales));
+      ttRow(tt, 'Prior', null, fmtMoney(it.prior));
+      ttRow(tt, 'Growth', null, fmtPct(g));
+    };
+    fill.addEventListener('pointermove', (e) => showTooltip(e.clientX, e.clientY, tooltipFn));
+    fill.addEventListener('pointerleave', hideTooltip);
+    track.appendChild(fill); row.appendChild(track);
+    const val = document.createElement('div'); val.className = 'bar-val'; val.textContent = fmtMoney(it.netSales);
+    if (opts.fontSize) val.style.fontSize = opts.fontSize + 'px';
+    row.appendChild(val);
+    const delta = document.createElement('div'); delta.className = 'bar-delta ' + growthClass(g); delta.textContent = arrow(g) + ' ' + fmtPct(g);
+    if (opts.fontSize) delta.style.fontSize = (opts.fontSize - 1) + 'px';
+    row.appendChild(delta);
+    target.appendChild(row);
+  });
+}
+
+/* ================= donut chart ================= */
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const a = (angleDeg - 90) * Math.PI / 180;
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+}
+function donutArcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
+  const startOuter = polarToCartesian(cx, cy, rOuter, startAngle);
+  const endOuter = polarToCartesian(cx, cy, rOuter, endAngle);
+  const startInner = polarToCartesian(cx, cy, rInner, endAngle);
+  const endInner = polarToCartesian(cx, cy, rInner, startAngle);
+  const largeArc = (endAngle - startAngle) > 180 ? 1 : 0;
+  return [
+    'M', startOuter[0].toFixed(2), startOuter[1].toFixed(2),
+    'A', rOuter, rOuter, 0, largeArc, 1, endOuter[0].toFixed(2), endOuter[1].toFixed(2),
+    'L', startInner[0].toFixed(2), startInner[1].toFixed(2),
+    'A', rInner, rInner, 0, largeArc, 0, endInner[0].toFixed(2), endInner[1].toFixed(2),
+    'Z',
+  ].join(' ');
+}
+function renderDonut(container, title, sub, items, colors, opts) {
+  opts = opts || {};
+  const h = document.createElement('h3'); h.textContent = title; container.appendChild(h);
+  const p = document.createElement('p'); p.className = 'sub'; p.textContent = sub; container.appendChild(p);
+
+  const total = items.reduce((s, it) => s + it.netSales, 0);
+
+  const topLegend = document.createElement('div'); topLegend.className = 'donut-top-legend';
+  items.forEach((it, i) => {
+    const key = document.createElement('span'); key.className = 'legend-key';
+    const dot = document.createElement('span'); dot.className = 'legend-dot'; dot.style.background = colors[i % colors.length];
+    const txt = document.createElement('span'); txt.textContent = it.k;
+    key.appendChild(dot); key.appendChild(txt); topLegend.appendChild(key);
+  });
+  container.appendChild(topLegend);
+
+  const vw = 380, vh = 230, cx = vw / 2, cy = vh / 2, rOuter = 62, rInner = 50;
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + vw + ' ' + vh);
+  svg.setAttribute('width', '100%');
+  svg.style.display = 'block'; svg.style.overflow = 'visible';
+
+  let angle = 0;
+  const GAP_DEG = items.length > 1 ? 1.2 : 0;
+  const segMeta = [];
+  items.forEach((it, i) => {
+    const share = it.netSales / total;
+    const sweep = Math.max(0, share * 360 - GAP_DEG);
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', donutArcPath(cx, cy, rOuter, rInner, angle, angle + sweep));
+    path.setAttribute('fill', colors[i % colors.length]);
+    path.style.cursor = 'pointer';
+    path.addEventListener('pointermove', (e) => {
+      showTooltip(e.clientX, e.clientY, (tt) => {
+        ttTitle(tt, it.k);
+        ttRow(tt, 'Net Sales', colors[i % colors.length], fmtMoney(it.netSales));
+        ttRow(tt, 'Share', null, fmtShare(share, 1));
+        ttRow(tt, 'Growth', null, fmtPct(growth(it.netSales, it.prior)));
+      });
+    });
+    path.addEventListener('pointerleave', hideTooltip);
+    svg.appendChild(path);
+    segMeta.push({ it, share, mid: angle + sweep / 2 });
+    angle += share * 360;
+  });
+
+  const MIN_LABEL_SHARE = 0.02;
+  const MIN_LABEL_GAP = 32;
+  const labelDescs = segMeta
+    .filter(({ share }) => share >= MIN_LABEL_SHARE)
+    .map(({ it, share, mid }) => {
+      const outer = polarToCartesian(cx, cy, rOuter, mid);
+      const elbow = polarToCartesian(cx, cy, rOuter + 10, mid);
+      const rightSide = elbow[0] >= cx;
+      const labelX = elbow[0] + (rightSide ? 5 : -5);
+      return { it, share, outer, elbowX: elbow[0], y: elbow[1], rightSide, labelX };
+    });
+  [true, false].forEach((side) => {
+    const group = labelDescs.filter((d) => d.rightSide === side).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < group.length; i++) {
+      if (group[i].y - group[i - 1].y < MIN_LABEL_GAP) group[i].y = group[i - 1].y + MIN_LABEL_GAP;
+    }
+  });
+  labelDescs.forEach(({ it, share, outer, elbowX, y, rightSide, labelX }) => {
+    const leader = document.createElementNS(svgNS, 'path');
+    leader.setAttribute('d', 'M' + outer[0].toFixed(1) + ',' + outer[1].toFixed(1) + ' L' + elbowX.toFixed(1) + ',' + y.toFixed(1) + ' L' + labelX.toFixed(1) + ',' + y.toFixed(1));
+    leader.setAttribute('fill', 'none'); leader.setAttribute('stroke', 'var(--baseline)'); leader.setAttribute('stroke-width', '1');
+    svg.appendChild(leader);
+    const anchorX = labelX + (rightSide ? 3 : -3);
+    const label = document.createElementNS(svgNS, 'text');
+    label.setAttribute('x', anchorX); label.setAttribute('y', y - 4); label.setAttribute('dy', '0.32em');
+    label.setAttribute('text-anchor', rightSide ? 'start' : 'end');
+    label.setAttribute('font-size', '13'); label.setAttribute('font-weight', '700'); label.setAttribute('fill', 'var(--text-primary)');
+    label.textContent = it.k + ' - ' + (share*100).toFixed(2) + ' %';
+    svg.appendChild(label);
+    const g2 = growth(it.netSales, it.prior);
+    const sub2 = document.createElementNS(svgNS, 'text');
+    sub2.setAttribute('x', anchorX); sub2.setAttribute('y', y + 9); sub2.setAttribute('dy', '0.32em');
+    sub2.setAttribute('text-anchor', rightSide ? 'start' : 'end'); sub2.setAttribute('font-size', '12'); sub2.setAttribute('fill', 'var(--text-muted)');
+    const tspanMoney = document.createElementNS(svgNS, 'tspan');
+    tspanMoney.textContent = fmtMoney(it.netSales) + ' (';
+    sub2.appendChild(tspanMoney);
+    const tspanGrowth = document.createElementNS(svgNS, 'tspan');
+    tspanGrowth.setAttribute('fill', g2 >= 0 ? 'var(--good)' : 'var(--critical)');
+    tspanGrowth.setAttribute('font-weight', '700');
+    tspanGrowth.textContent = arrow(g2) + ' ' + fmtPct(g2, 2);
+    sub2.appendChild(tspanGrowth);
+    const tspanClose = document.createElementNS(svgNS, 'tspan');
+    tspanClose.textContent = ')';
+    sub2.appendChild(tspanClose);
+    svg.appendChild(sub2);
+  });
+
+  const centerVal = document.createElementNS(svgNS, 'text');
+  centerVal.setAttribute('x', cx); centerVal.setAttribute('y', cy - 3); centerVal.setAttribute('text-anchor', 'middle');
+  centerVal.setAttribute('font-size', '15'); centerVal.setAttribute('font-weight', '700'); centerVal.setAttribute('fill', 'var(--text-primary)');
+  centerVal.textContent = fmtMoney(total);
+  svg.appendChild(centerVal);
+  const centerLbl = document.createElementNS(svgNS, 'text');
+  centerLbl.setAttribute('x', cx); centerLbl.setAttribute('y', cy + 13); centerLbl.setAttribute('text-anchor', 'middle');
+  centerLbl.setAttribute('font-size', '12'); centerLbl.setAttribute('fill', 'var(--text-muted)');
+  centerLbl.textContent = 'Total Net Sales';
+  svg.appendChild(centerLbl);
+  container.appendChild(svg);
+
+  const detailHeaders = opts.detailHeaders || ['', 'Net Sales', 'Share %', 'Growth %'];
+  const detailRows = opts.detailRows || items.map((it) => [it.k, fmtMoney(it.netSales), fmtShare(it.netSales / total, 1), growthCell(growth(it.netSales, it.prior))]);
+  const table = document.createElement('table'); table.className = 'detail-table';
+  const thead = document.createElement('thead'); const htr = document.createElement('tr');
+  detailHeaders.forEach((hh) => { const th = document.createElement('th'); th.textContent = hh; htr.appendChild(th); });
+  thead.appendChild(htr); table.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  detailRows.forEach((row) => {
+    const tr = document.createElement('tr');
+    row.forEach((cell) => {
+      const td = document.createElement('td');
+      if (cell && typeof cell === 'object') { td.textContent = cell.text; td.style.color = cell.color; } else td.textContent = cell;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+
+/* ================= trend chart (current year vs prior year, monthly) ================= */
+function renderTrendChart(container, title, sub, months, seriesCur, seriesPrior, yearCur, yearPrior) {
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+
+  const h = document.createElement('h3'); h.textContent = title; container.appendChild(h);
+  const p = document.createElement('p'); p.className = 'sub'; p.textContent = sub; container.appendChild(p);
+
+  const legend = document.createElement('div'); legend.className = 'trend-legend';
+  [[yearCur, 'var(--series-accent)'], [yearPrior, 'var(--series-prior)']].forEach(([label, color]) => {
+    const key = document.createElement('span'); key.className = 'legend-key';
+    const line = document.createElement('span'); line.className = 'legend-line'; line.style.background = color;
+    const txt = document.createElement('span'); txt.textContent = String(label);
+    key.appendChild(line); key.appendChild(txt); legend.appendChild(key);
+  });
+  container.appendChild(legend);
+
+  // Build the detail table (and every other sibling) BEFORE measuring the
+  // chart's available height — measuring first and appending the table after
+  // leaves the table's height out of the flex layout at measurement time, so
+  // the chart claims space the table then takes back, rendering short/squeezed.
+  const table = document.createElement('table'); table.className = 'detail-table trend-detail';
+  const thead = document.createElement('thead'); const headRow = document.createElement('tr');
+  const th0 = document.createElement('th'); th0.textContent = ''; th0.style.textAlign = 'left'; headRow.appendChild(th0);
+  months.forEach((m) => { const th = document.createElement('th'); th.textContent = m; headRow.appendChild(th); });
+  const thTotal = document.createElement('th'); thTotal.textContent = 'Total'; headRow.appendChild(thTotal);
+  thead.appendChild(headRow); table.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  function detailRow(label, cells, totalCell) {
+    const tr = document.createElement('tr');
+    const tdLabel = document.createElement('td'); tdLabel.textContent = label; tdLabel.style.textAlign = 'left'; tdLabel.style.fontWeight = '700'; tdLabel.style.color = 'var(--text-primary)';
+    tr.appendChild(tdLabel);
+    cells.forEach((c) => { const td = document.createElement('td'); td.textContent = c.text; if (c.color) td.style.color = c.color; tr.appendChild(td); });
+    const tdTotal = document.createElement('td'); tdTotal.style.fontWeight = '700'; tdTotal.style.color = totalCell.color || 'var(--text-primary)'; tdTotal.textContent = totalCell.text;
+    tr.appendChild(tdTotal); tbody.appendChild(tr);
+  }
+  const totalCur = seriesCur.reduce((s, v) => s + v, 0), totalPrior = seriesPrior.reduce((s, v) => s + v, 0);
+  const totalG = growth(totalCur, totalPrior);
+  detailRow(String(yearCur), seriesCur.map((v) => ({ text: fmtMoney(v) })), { text: fmtMoney(totalCur) });
+  detailRow(String(yearPrior), seriesPrior.map((v) => ({ text: fmtMoney(v) })), { text: fmtMoney(totalPrior) });
+  detailRow('% Growth', seriesCur.map((v, i) => { const g = growth(v, seriesPrior[i]); return { text: arrow(g) + ' ' + fmtPct(g), color: g >= 0 ? 'var(--good)' : 'var(--critical)' }; }), { text: arrow(totalG) + ' ' + fmtPct(totalG), color: totalG >= 0 ? 'var(--good)' : 'var(--critical)' });
+  table.appendChild(tbody);
+  container.appendChild(table);
+
+  // Grows to fill whatever vertical space is left (often stretched taller by
+  // a sibling card in the same grid row, e.g. a long office list) — inserted
+  // before the table now that the table's real height is already accounted for.
+  const chartWrap = document.createElement('div');
+  chartWrap.style.flex = '1'; chartWrap.style.minHeight = '220px'; chartWrap.style.position = 'relative';
+  container.insertBefore(chartWrap, table);
+
+  const containerRect = container.getBoundingClientRect();
+  const containerStyle = getComputedStyle(container);
+  const availWidth = containerRect.width - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight);
+  const chartRect = chartWrap.getBoundingClientRect();
+  const w = Math.max(availWidth, 280), h2 = Math.max(chartRect.height, 220), padL = 46, padR = 16, padT = 34, padB = 28;
+  const plotW = w - padL - padR, plotH = h2 - padT - padB;
+  const allVals = seriesCur.concat(seriesPrior);
+  const maxV = Math.max.apply(null, allVals);
+  const niceMax = Math.ceil((maxV * 1.15) / 5e5) * 5e5 || 1;
+  const n = months.length;
+  function xFor(i) { return padL + (n === 1 ? plotW/2 : (i / (n - 1)) * plotW); }
+  function yFor(v) { return padT + plotH - (v / niceMax) * plotH; }
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h2);
+  svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%');
+  svg.style.display = 'block'; svg.style.overflow = 'visible';
+  svg.style.position = 'absolute'; svg.style.inset = '0';
+
+  const steps = 4;
+  for (let s = 0; s <= steps; s++) {
+    const v = (niceMax / steps) * s;
+    const y = yFor(v);
+    const txt = document.createElementNS(svgNS, 'text');
+    txt.setAttribute('x', padL - 8); txt.setAttribute('y', y + 4); txt.setAttribute('text-anchor', 'end');
+    txt.setAttribute('font-size', '10'); txt.setAttribute('fill', 'var(--text-muted)');
+    txt.textContent = fmtCompact(v, 0);
+    svg.appendChild(txt);
+  }
+  months.forEach((m, i) => {
+    const txt = document.createElementNS(svgNS, 'text');
+    txt.setAttribute('x', xFor(i)); txt.setAttribute('y', h2 - 8); txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('font-size', '11'); txt.setAttribute('font-weight', '600'); txt.setAttribute('fill', 'var(--text-secondary)');
+    txt.textContent = m;
+    svg.appendChild(txt);
+  });
+
+  function lineFor(values) { return values.map((v, i) => [xFor(i), yFor(v)]).map((pt) => pt[0].toFixed(1) + ',' + pt[1].toFixed(1)).join(' L'); }
+  function drawArea(values, fill) {
+    const pts = values.map((v, i) => [xFor(i), yFor(v)]);
+    const base = yFor(0);
+    const d = 'M' + lineFor(values) + ' L' + pts[pts.length-1][0].toFixed(1) + ',' + base + ' L' + pts[0][0].toFixed(1) + ',' + base + ' Z';
+    const area = document.createElementNS(svgNS, 'path'); area.setAttribute('d', d); area.setAttribute('fill', fill); area.setAttribute('stroke', 'none');
+    svg.appendChild(area);
+  }
+  function drawLine(values, color) {
+    const path = document.createElementNS(svgNS, 'path'); path.setAttribute('d', 'M' + lineFor(values));
+    path.setAttribute('fill', 'none'); path.setAttribute('stroke', color); path.setAttribute('stroke-width', '2.5');
+    path.setAttribute('stroke-linecap', 'round'); path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path);
+    const pts = values.map((v, i) => [xFor(i), yFor(v)]);
+    pts.forEach((pt) => {
+      const dot = document.createElementNS(svgNS, 'circle');
+      dot.setAttribute('cx', pt[0]); dot.setAttribute('cy', pt[1]); dot.setAttribute('r', 4);
+      dot.setAttribute('fill', color); dot.setAttribute('stroke', 'var(--surface-1)'); dot.setAttribute('stroke-width', '2');
+      svg.appendChild(dot);
+    });
+    return pts;
+  }
+
+  drawArea(seriesPrior, 'var(--series-prior-wash)');
+  drawArea(seriesCur, 'var(--series-accent-wash)');
+  drawLine(seriesPrior, 'var(--series-prior)');
+  const ptsCur = drawLine(seriesCur, 'var(--series-accent)');
+
+  ptsCur.forEach((pt, i) => {
+    const g = growth(seriesCur[i], seriesPrior[i]);
+    const valueLabel = document.createElementNS(svgNS, 'text');
+    valueLabel.setAttribute('x', pt[0]); valueLabel.setAttribute('y', pt[1] - 22); valueLabel.setAttribute('text-anchor', 'middle');
+    valueLabel.setAttribute('font-size', '12'); valueLabel.setAttribute('font-weight', '700'); valueLabel.setAttribute('fill', 'var(--text-primary)');
+    valueLabel.textContent = fmtMoney(seriesCur[i]);
+    svg.appendChild(valueLabel);
+    const growthLabel = document.createElementNS(svgNS, 'text');
+    growthLabel.setAttribute('x', pt[0]); growthLabel.setAttribute('y', pt[1] - 10); growthLabel.setAttribute('text-anchor', 'middle');
+    growthLabel.setAttribute('font-size', '10.5'); growthLabel.setAttribute('font-weight', '700');
+    growthLabel.setAttribute('fill', g >= 0 ? 'var(--good)' : 'var(--critical)');
+    growthLabel.textContent = arrow(g) + ' ' + fmtPct(g);
+    svg.appendChild(growthLabel);
+  });
+
+  const crosshair = document.createElementNS(svgNS, 'line');
+  crosshair.setAttribute('y1', padT); crosshair.setAttribute('y2', padT + plotH);
+  crosshair.setAttribute('stroke', 'var(--baseline)'); crosshair.setAttribute('stroke-width', '1'); crosshair.setAttribute('opacity', '0');
+  svg.appendChild(crosshair);
+  for (let i = 0; i < n; i++) {
+    const hit = document.createElementNS(svgNS, 'rect');
+    const bandW = plotW / n;
+    hit.setAttribute('x', xFor(i) - bandW/2); hit.setAttribute('y', padT); hit.setAttribute('width', bandW); hit.setAttribute('height', plotH);
+    hit.setAttribute('fill', 'transparent'); hit.style.cursor = 'crosshair';
+    hit.addEventListener('pointermove', (e) => {
+      crosshair.setAttribute('x1', xFor(i)); crosshair.setAttribute('x2', xFor(i)); crosshair.setAttribute('opacity', '1');
+      showTooltip(e.clientX, e.clientY, (tt) => {
+        ttTitle(tt, months[i]);
+        ttRow(tt, String(yearCur), 'var(--series-accent)', fmtMoney(seriesCur[i]));
+        ttRow(tt, String(yearPrior), 'var(--series-prior)', fmtMoney(seriesPrior[i]));
+        ttRow(tt, 'YoY Growth', null, fmtPct(growth(seriesCur[i], seriesPrior[i])));
+      });
+    });
+    hit.addEventListener('pointerleave', () => { crosshair.setAttribute('opacity', '0'); hideTooltip(); });
+    svg.appendChild(hit);
+  }
+  chartWrap.appendChild(svg);
+}
+
+/* ================= simple breakdown table (channel) ================= */
+/* ================= hero product table ================= */
+function renderHeroTable(container, title, sub, items) {
+  const h = document.createElement('h3'); h.textContent = title; container.appendChild(h);
+  const p = document.createElement('p'); p.className = 'sub'; p.textContent = sub; container.appendChild(p);
+  const table = document.createElement('table'); table.className = 'data-table';
+  const thead = document.createElement('thead'); const headRow = document.createElement('tr');
+  const headers = ['#', 'Article Id', 'Article Name', 'Brand', 'Product Group', 'Mc Desc', 'Net Sales 2025', 'Net Sales 2026', 'Growth Net Sales', 'Sales Qty 2025', 'Sales Qty 2026', 'Growth Sales Qty'];
+  const numCols = new Set(['Net Sales 2025', 'Net Sales 2026', 'Growth Net Sales', 'Sales Qty 2025', 'Sales Qty 2026', 'Growth Sales Qty']);
+  headers.forEach((label) => { const th = document.createElement('th'); if (numCols.has(label)) th.className = 'num'; th.textContent = label; headRow.appendChild(th); });
+  thead.appendChild(headRow); table.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  items.forEach((it, idx) => {
+    const tr = document.createElement('tr');
+    function addCell(text, cls, color) {
+      const td = document.createElement('td'); if (cls) td.className = cls; if (color) td.style.color = color; td.textContent = text; tr.appendChild(td);
+    }
+    addCell(String(idx + 1), 'rank');
+    addCell(it.id);
+    addCell(it.name, 'name');
+    addCell(it.brand);
+    addCell(it.group);
+    addCell(it.mc || '');
+    addCell(it.netSales2025 > 0 ? fmtMoney(it.netSales2025) : '–', 'num');
+    addCell(fmtMoney(it.netSales2026), 'num');
+    if (it.netSales2025 > 0) { const gc = growthCell(it.growthNetSales); addCell(gc.text, 'num', gc.color); } else addCell('New', 'num');
+    addCell(it.qty2025 > 0 ? fmtInt(it.qty2025) : '–', 'num');
+    addCell(fmtInt(it.qty2026), 'num');
+    if (it.qty2025 > 0) { const gcq = growthCell(it.growthQty); addCell(gcq.text, 'num', gcq.color); } else addCell('New', 'num');
+
+    tr.addEventListener('pointermove', (e) => {
+      showTooltip(e.clientX, e.clientY, (tt) => {
+        ttTitle(tt, it.name);
+        ttRow(tt, 'Article ID', null, it.id);
+        ttRow(tt, 'Brand', null, it.brand);
+        ttRow(tt, 'Mc Desc', null, it.mc || '');
+        ttRow(tt, 'Net Sales 2026', 'var(--series-accent)', fmtMoney(it.netSales2026));
+        ttRow(tt, 'Net Sales 2025', 'var(--series-prior)', it.netSales2025 > 0 ? fmtMoney(it.netSales2025) : 'New in 2026');
+      });
+    });
+    tr.addEventListener('pointerleave', hideTooltip);
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+
+/* ================= render orchestration ================= */
+function renderDashboard(DATA) {
+  document.getElementById('title').textContent = DATA.meta.title.toUpperCase();
+  document.getElementById('subtitle').textContent = DATA.meta.subtitle;
+  document.getElementById('asof').textContent = 'Data as of : ' + DATA.meta.asOf;
+  const priorLabel = String(DATA.priorYear);
+
+  // Row 1: Vendor + Vendor Snapshot
+  clearAndRun('card-vendor', (el) => renderVendorCard(el, { vendorName: DATA.vendorName, brands: DATA.brands.map((b) => b.k), mch2: DATA.mch2.map((m) => m.k) }));
+  clearAndRun('card-snapshot', (el) => renderSnapshotCard(el, DATA.vendorSnapshot));
+
+  // Row 2: KPI strip
+  const kpiEl = document.getElementById('kpi-strip');
+  kpiEl.innerHTML = '';
+  const sparkLabels = DATA.trend.months, yearCur = DATA.currentYear, yearPrior = DATA.priorYear;
+  renderKpiStrip(kpiEl, [
+    { label: 'Net Sales (Net Inc Tax)', v2026: DATA.kpi.netSales.v2026, v2025: DATA.kpi.netSales.v2025, formatValue: fmtMoney, priorLabel, sparklineCur: DATA.kpi.netSales.sparklineCur, sparklinePrior: DATA.kpi.netSales.sparklinePrior, sparkLabels, yearCur, yearPrior },
+    { label: 'Sale Qty (Pcs.)', v2026: DATA.kpi.qty.v2026, v2025: DATA.kpi.qty.v2025, formatValue: fmtInt, priorLabel, sparklineCur: DATA.kpi.qty.sparklineCur, sparklinePrior: DATA.kpi.qty.sparklinePrior, sparkLabels, yearCur, yearPrior },
+    { label: 'AOV (Avg. Selling Price)', v2026: DATA.kpi.aov.v2026, v2025: DATA.kpi.aov.v2025, formatValue: (v) => fmtInt(v), priorLabel, sparklineCur: DATA.kpi.aov.sparklineCur, sparklinePrior: DATA.kpi.aov.sparklinePrior, sparkLabels, yearCur, yearPrior },
+    { label: 'SKU Count', v2026: DATA.kpi.sku.v2026, v2025: DATA.kpi.sku.v2025, formatValue: fmtInt, priorLabel },
+    { label: '% of Total Sales', v2026: DATA.kpi.pctOfTotal.v2026, v2025: DATA.kpi.pctOfTotal.v2025, formatValue: (v) => (v*100).toFixed(1)+'%', priorLabel },
+  ]);
+
+  // Row 3: Sales by Sales Office + Net Sales Trend
+  clearAndRun('chart-office', (el) => renderBarList(el, 'Sales by Sales Office', 'Net Sales, THB', DATA.office, {
+    showShare: true, colorFor: () => '#87CEFA', labelWidth: 150, compact: true, trackHeight: 10, fontSize: 12, fillHeight: true,
+  }));
+  const trendMonths = DATA.trend.months;
+  const trendRangeLabel = trendMonths.length > 1 ? (trendMonths[0] + '–' + trendMonths[trendMonths.length - 1]) : (trendMonths[0] || '—');
+  clearAndRun('chart-trend', (el) => renderTrendChart(el, 'Net Sales Trend (' + trendRangeLabel + ')', 'Unit: THB · ' + yearCur + ' vs ' + yearPrior + ' · %Growth labeled at each ' + yearCur + ' point', DATA.trend.months, DATA.trend.cur, DATA.trend.prior, DATA.currentYear, DATA.priorYear));
+
+  // Row 4: Sales by Brand / Channel / Product Group / Price Segment
+  // Rows for near-zero-share slices are dropped from the detail table too — same
+  // cutoff used to hide their donut labels, so the table doesn't list clutter the
+  // chart itself doesn't call out.
+  const MIN_ROW_SHARE = 0.01;
+
+  const brandTotal = DATA.brands.reduce((s, it) => s + it.netSales, 0);
+  clearAndRun('chart-brand', (el) => renderDonut(el, 'Sales by Brand', 'Share of Net Sales ' + yearCur, DATA.brands, ['#7978B1', '#EDA100'], {
+    detailHeaders: ['Brand', 'Net Sales', 'Share %', 'Growth %'],
+    detailRows: DATA.brands.filter((it) => it.netSales / (brandTotal || 1) >= MIN_ROW_SHARE).map((it) => [it.k, fmtMoney(it.netSales), fmtShare(it.netSales / (brandTotal || 1), 1), growthCell(it.growth)]),
+  }));
+
+  const channelTotal = DATA.channel.reduce((s, it) => s + it.netSales, 0);
+  clearAndRun('table-channel', (el) => renderDonut(el, 'Sales by Channel', 'Share of Net Sales ' + yearCur, DATA.channel, ['#00AFB9', '#F07167', '#8A6FBF', '#C3C2B7'], {
+    detailHeaders: ['Channel', 'Net Sales', '%Share of Sales', '%Growth Sales', 'SKU Count', '%Share SKU'],
+    detailRows: DATA.channel.filter((it) => it.netSales / (channelTotal || 1) >= MIN_ROW_SHARE).map((it) => [it.k, fmtMoney(it.netSales), fmtShare(it.netSales / (channelTotal || 1), 0), growthCell(it.growth), fmtInt(it.skuCount || 0), fmtShare(it.skuShare || 0, 0)]),
+  }));
+
+  const productGroupTotal = DATA.productGroup.reduce((s, it) => s + it.netSales, 0);
+  clearAndRun('chart-productGroup', (el) => renderDonut(el, 'Sales by Product Group', 'Share of Net Sales ' + yearCur, DATA.productGroup, ['#2A9D8F', '#E9C46A', '#F4A261', '#E76F51'], {
+    detailHeaders: ['Product Group', 'Net Sales', '%Share of Sales', '%Growth Sales', 'SKU Count', '%Share SKU'],
+    detailRows: DATA.productGroup.filter((it) => it.netSales / (productGroupTotal || 1) >= MIN_ROW_SHARE).map((it) => [it.k, fmtMoney(it.netSales), fmtShare(it.netSales / (productGroupTotal || 1), 0), growthCell(it.growth), fmtInt(it.skuCount || 0), fmtShare(it.skuShare || 0, 0)]),
+  }));
+
+  const priceSegmentTotal = DATA.priceSegment.reduce((s, it) => s + it.netSales, 0);
+  clearAndRun('chart-priceSegment', (el) => renderDonut(el, 'Sales by Price Segment', 'Share of Net Sales ' + yearCur, DATA.priceSegment, ['#9D7FB5', '#E8698F', '#7B93E0', '#5DBE8A'], {
+    detailHeaders: ['Segment', 'Net Sales', '%Share of Sales', '%Growth Sales', 'SKU Count', '%Share SKU'],
+    detailRows: DATA.priceSegment.filter((it) => it.salesShare >= MIN_ROW_SHARE).map((it) => [it.k, fmtMoney(it.netSales), fmtShare(it.salesShare, 0), growthCell(it.growth), fmtInt(it.skuCount), fmtShare(it.skuShare, 0)]),
+  }));
+
+  // Row 5: Top 10 Products
+  clearAndRun('table-hero', (el) => renderHeroTable(el, 'Top 10 Products by Net Sales', 'Ranked by Net Sales', DATA.heroProducts));
+  clearAndRun('table-heroQty', (el) => renderHeroTable(el, 'Top 10 Products by Sales Qty', 'Ranked by Sales Qty', DATA.heroProductsByQty));
+}
+
+/* ================= example data (for standalone layout preview) =================
+ * Real numbers for one vendor — บจก.ร็อคค่า บาธรูม โพรดักส์  (ไทยแลนด์) (Roca
+ * Bathroom Products Thailand) — computed directly from "data form ds new.xlsx"
+ * (Jan–Mar 2026 vs Jan–Mar 2025, the only months this vendor has 2026 data for).
+ * Used to render a fully populated dashboard when this file is opened directly
+ * in a browser (no Tableau host), so layout/format can be reviewed without a
+ * live extension context. Replace with EXAMPLE_DATA once wired to the live
+ * per-vendor Tableau pipeline. */
+const EXAMPLE_DATA = {
+  vendorName: 'บจก.ร็อคค่า บาธรูม โพรดักส์  (ไทยแลนด์)',
+  currentYear: 2026, priorYear: 2025,
+  meta: { title: 'Vendor Business Review', subtitle: 'Jan – Mar 2026 vs Jan – Mar 2025', asOf: 'Mar 2026' },
+  kpi: {
+    netSales: { v2026: 13217044.26, v2025: 14948534.01, sparklineCur: [4324989.95, 4172447.60, 4719606.71], sparklinePrior: [5177051.74, 4444692.47, 5326789.80] },
+    qty: { v2026: 6819, v2025: 7826, sparklineCur: [2405, 2182, 2232], sparklinePrior: [2880, 2257, 2689] },
+    sku: { v2026: 231, v2025: 241 },
+    aov: { v2026: 1938.27, v2025: 1910.11, sparklineCur: [1798.33, 1912.21, 2114.52], sparklinePrior: [1797.59, 1969.29, 1980.96] },
+    pctOfTotal: { v2026: 0.046874176761617176, v2025: 0.048597318164751865 },
+  },
+  vendorSnapshot: { rankSales: 7, rankSku: 10, activeVendorCount: 38, activeBrand: 2, activeMch2: 3, share: 0.046874176761617176 },
+  brands: [
+    { k: 'ROCA', netSales: 13193431.22, prior: 14769997.27 },
+    { k: 'JOHNSONSUISSE', netSales: 23613.04, prior: 178536.74 },
+  ],
+  productGroup: [
+    { k: 'Faucet', netSales: 4363595.28, prior: 4566609.98, skuCount: 97, skuShare: 0.4199134199134199 },
+    { k: 'Shower', netSales: 3500742.27, prior: 3819004.93, skuCount: 28, skuShare: 0.12121212121212122 },
+    { k: 'Accessories', netSales: 3196470.78, prior: 3735047.77, skuCount: 66, skuShare: 0.2857142857142857 },
+    { k: 'Spare Parts', netSales: 2156235.93, prior: 2827871.33, skuCount: 40, skuShare: 0.17316017316017315 },
+  ],
+  mch2: [
+    { k: 'ก๊อกน้ำ/ฝักบัว', netSales: 7864337.55, prior: 8385614.91 },
+    { k: 'อุปกรณ์ห้องน้ำ', netSales: 3196470.78, prior: 3735047.77 },
+    { k: 'อะไหล่ห้องน้ำ', netSales: 2156235.93, prior: 2827871.33 },
+  ],
+  priceSegment: [
+    { k: 'PREMIUM', netSales: 6240639.51, prior: 7058722.68, salesShare: 0.4721660446342485, skuCount: 92, skuShare: 0.39826839826839827 },
+    { k: 'MASS', netSales: 4149225.71, prior: 4604771.19, salesShare: 0.31392992475308545, skuCount: 82, skuShare: 0.354978354978355 },
+    { k: 'LUXURY', netSales: 1822110.89, prior: 2371822.52, salesShare: 0.1378606936737307, skuCount: 19, skuShare: 0.08225108225108226 },
+    { k: 'ECO', netSales: 1005068.15, prior: 913217.62, salesShare: 0.07604333693893525, skuCount: 38, skuShare: 0.1645021645021645 },
+  ],
+  office: [
+    { k: 'รัชดา', netSales: 2554099.77, prior: 3203964.15 },
+    { k: 'บางนา', netSales: 1974785.22, prior: 2762542.70 },
+    { k: 'เกษตร-นวมินทร์', netSales: 1744592.92, prior: 1685464.46 },
+    { k: 'หัวหิน', netSales: 1647704.08, prior: 977118.88 },
+    { k: 'พุทธมณฑล', netSales: 1101847.10, prior: 1196627.52 },
+    { k: 'สุราษฎร์ธานี', netSales: 770757.80, prior: 1414774.99 },
+    { k: 'พัทยา', netSales: 603562.16, prior: 665315.22 },
+    { k: 'พระราม 2', netSales: 548179.28, prior: 724655.18 },
+    { k: 'รังสิต-สำนักงานใหญ่', netSales: 545615.31, prior: 546192.98 },
+    { k: 'เชียงใหม่', netSales: 507968.07, prior: 337697.36 },
+    { k: 'ECOMMERCE', netSales: 390522.00, prior: 307439.00 },
+    { k: 'ราชพฤกษ์', netSales: 321045.31, prior: 335168.74 },
+    { k: 'อุดรธานี', netSales: 222192.48, prior: 428561.37 },
+    { k: 'DC รังสิต BTCL', netSales: 125044.16, prior: 104585.16 },
+    { k: 'ระยอง', netSales: 108708.00, prior: 132375.00 },
+    { k: 'พิษณุโลก', netSales: 50420.60, prior: 2289.20 },
+    { k: 'โคราช', netSales: 0, prior: 91963.40 },
+    { k: 'สัตหีบ', netSales: 0, prior: 31798.70 },
+  ],
+  channel: [
+    { k: 'Showroom', netSales: 12679759.44, prior: 14539260.09, skuCount: 229, skuShare: 0.7363344051446945 },
+    { k: 'Web', netSales: 390522, prior: 302045, skuCount: 46, skuShare: 0.14790996784565916 },
+    { k: 'Anyhome', netSales: 146762.82, prior: 101834.92, skuCount: 36, skuShare: 0.1157556270096463 },
+    { k: 'Anyhome(Online)', netSales: 0, prior: 5394, skuCount: 0, skuShare: 0 },
+  ],
+  heroProducts: [
+    { id: '1276404', name: 'A5A9B10C0N PIANO-Tชุดฝักบัวอาบน้ำครบชุด', brand: 'ROCA', group: 'Shower', mc: 'เรนชาวเวอร์', netSales2025: 0, netSales2026: 1006789.46, qty2025: 0, qty2026: 65 },
+    { id: '1253955', name: 'A812430000 MOON กระจกLED 100x80', brand: 'ROCA', group: 'Accessories', mc: 'กระจกพร้อมไฟ', netSales2025: 756295.94, netSales2026: 682405.32, qty2025: 93, qty2026: 81 },
+    { id: '1246273', name: 'A812412000 กระจกไฟ MOON LED 600x800mm.', brand: 'ROCA', group: 'Accessories', mc: 'กระจกพร้อมไฟ', netSales2025: 936676.47, netSales2026: 658031.39, qty2025: 197, qty2026: 135 },
+    { id: '1251533', name: 'A8900700C0 DUPLO ONE หม้อน้ำซ่อนผนัง', brand: 'ROCA', group: 'Spare Parts', mc: 'อะไหล่หม้อน้ำ', netSales2025: 545709.39, netSales2026: 323451.00, qty2025: 45, qty2026: 25 },
+    { id: '1261415', name: 'A5B5551C0T MODICA-LITE ชุดเรนชาวเวอร์', brand: 'ROCA', group: 'Shower', mc: 'เรนชาวเวอร์', netSales2025: 275814.52, netSales2026: 277751.29, qty2025: 60, qty2026: 59 },
+    { id: '1110056', name: 'A506404130 ท่อน้ำทิ้ง P-trap (ทองเหลือง)', brand: 'ROCA', group: 'Spare Parts', mc: 'ท่อน้ำทิ้ง', netSales2025: 392907.69, netSales2026: 273101.61, qty2025: 625, qty2026: 422 },
+    { id: '1276403', name: 'A5A9B10NBN PIANO-T ชุดฝักบัวอาบน้ำครบชุด', brand: 'ROCA', group: 'Shower', mc: 'เรนชาวเวอร์', netSales2025: 0, netSales2026: 241933.08, qty2025: 0, qty2026: 14 },
+    { id: '1252013', name: 'A5A9B90C00 EVEN-M ชุดฝักบัวก้านแข็งพร้อม', brand: 'ROCA', group: 'Shower', mc: 'เรนชาวเวอร์', netSales2025: 434476.14, netSales2026: 221601.60, qty2025: 32, qty2026: 16 },
+    { id: '1261470', name: 'A812450000 MOON PLUS กระจกไฟทรงกลม 80CM.', brand: 'ROCA', group: 'Accessories', mc: 'กระจกพร้อมไฟ', netSales2025: 77211.56, netSales2026: 220226.90, qty2025: 11, qty2026: 29 },
+    { id: '1251372', name: 'A5A9A2ECN2 EVEN-T ชุดฝักบัวก้านแข็ง ดำ', brand: 'ROCA', group: 'Shower', mc: 'เรนชาวเวอร์', netSales2025: 167985.60, netSales2026: 191952.00, qty2025: 4, qty2026: 5 },
+  ],
+  heroProductsByQty: [
+    { id: '1110058', name: 'A525159600 วาล์วปิด-เปิดน้ำ', brand: 'ROCA', group: 'Faucet', mc: 'สต็อปวาล์ว', netSales2025: 176388.70, netSales2026: 160797.49, qty2025: 511, qty2026: 441 },
+    { id: '1110056', name: 'A506404130 ท่อน้ำทิ้ง P-trap (ทองเหลือง)', brand: 'ROCA', group: 'Spare Parts', mc: 'ท่อน้ำทิ้ง', netSales2025: 392907.69, netSales2026: 273101.61, qty2025: 625, qty2026: 422 },
+    { id: '1139578', name: 'A5260000TH สายน้ำดีสแตนเลสถักยาว 18 นิ้ว', brand: 'ROCA', group: 'Spare Parts', mc: 'สายน้ำดี', netSales2025: 89355.30, netSales2026: 64841.40, qty2025: 569, qty2026: 391 },
+    { id: '1258198', name: 'A5A008SSTH ตะแกรงระบายน้ำสเตนเลส', brand: 'ROCA', group: 'Spare Parts', mc: 'ตะแกรงกันกลิ่น', netSales2025: 150911.99, netSales2026: 161100.71, qty2025: 346, qty2026: 363 },
+    { id: '1110027', name: 'A525431400 สะดืออ่างล้างหน้าแบบป๊อบอัพ', brand: 'ROCA', group: 'Spare Parts', mc: 'สะดืออ่างล้างหน้า', netSales2025: 166761.14, netSales2026: 124560.61, qty2025: 350, qty2026: 263 },
+    { id: '1258196', name: 'A5A001BRTH ตะแกรงระบายน้ำทองเหลือง100m.', brand: 'ROCA', group: 'Spare Parts', mc: 'ตะแกรงกันกลิ่น', netSales2025: 46515.60, netSales2026: 115727.47, qty2025: 80, qty2026: 197 },
+    { id: '1110030', name: 'A525159500 วาล์วปิด-เปิดน้ำ', brand: 'ROCA', group: 'Faucet', mc: 'สต็อปวาล์ว', netSales2025: 79245.92, netSales2026: 54287.44, qty2025: 279, qty2026: 192 },
+    { id: '1110026', name: 'A506404120 ท่อน้ำทิ้งแบบกระปุก 33 ซม.', brand: 'ROCA', group: 'Spare Parts', mc: 'ท่อน้ำทิ้ง', netSales2025: 43666.95, netSales2026: 110394.10, qty2025: 64, qty2026: 177 },
+    { id: '1124089', name: 'A525159400 วาล์วเปิด-ปิดน้ำ (เข้า1ออก2)', brand: 'ROCA', group: 'Faucet', mc: 'สต็อปวาล์ว', netSales2025: 79368.92, netSales2026: 58006.00, qty2025: 202, qty2026: 148 },
+    { id: '1246273', name: 'A812412000 กระจกไฟ MOON LED 600x800mm.', brand: 'ROCA', group: 'Accessories', mc: 'กระจกพร้อมไฟ', netSales2025: 936676.47, netSales2026: 658031.39, qty2025: 197, qty2026: 135 },
+  ],
+};
+EXAMPLE_DATA.trend = { months: ['Jan', 'Feb', 'Mar'], cur: EXAMPLE_DATA.kpi.netSales.sparklineCur, prior: EXAMPLE_DATA.kpi.netSales.sparklinePrior };
+[EXAMPLE_DATA.brands, EXAMPLE_DATA.productGroup, EXAMPLE_DATA.mch2, EXAMPLE_DATA.office, EXAMPLE_DATA.channel, EXAMPLE_DATA.priceSegment].forEach((list) => {
+  list.forEach((it) => { it.growth = growth(it.netSales, it.prior); });
+});
+[EXAMPLE_DATA.heroProducts, EXAMPLE_DATA.heroProductsByQty].forEach((list) => {
+  list.forEach((it) => {
+    it.growthNetSales = growth(it.netSales2026, it.netSales2025);
+    it.growthQty = growth(it.qty2026, it.qty2025);
+  });
+});
+
+/* ================= LIVE TABLEAU DATA PIPELINE =================
+ * Three worksheets, classified by name (case-insensitive substring match) so
+ * the dashboard author can lay them out in any order:
+ *   - "Trend"      Month-grain, filtered to the selected Vendor. Feeds the
+ *                   KPI tiles, monthly trend chart and Sales Office bars.
+ *   - "Detail"     Year-grain with Article Id, filtered to the selected
+ *                   Vendor. Feeds Brand/Product Group/MCH2/Price Segment/
+ *                   Channel breakdowns and the Hero Products table.
+ *   - "AllVendors" Year-grain, Vendor + Net Sales + Qty + Article Id, NOT
+ *                   filtered by Vendor. Needed to compute company-wide
+ *                   totals and this vendor's rank/share among all vendors —
+ *                   a per-vendor-filtered worksheet alone can't answer that.
+ */
+const FIELD = {
+  DATE: 'Month, Year of Time Date',
+  CHANNEL: 'Sls Grp Desc',
+  OFFICE: 'Sls Ofc Desc',
+  ARTICLE_ID: 'Article Id',
+  ARTICLE_NAME: 'Article Name Th',
+  MCH2: 'MCH2_Desc',
+  MCH1: 'Mch1 Desc',
+  MC: 'Mc Desc',
+  BRAND: 'Brand',
+  VENDOR: 'Vendor Name',
+  PRICE_SEGMENT: 'Universe',
+  NET_SALES: 'Net Inc Tax',
+  QTY: 'Sale Qty',
+  MARGIN: '%Margin (no tax)',
+};
+const monthAbbr = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function unwrapCaption(name) {
+  const m = /^[A-Za-z]+\((.+)\)$/.exec(name || '');
+  return m ? m[1] : name;
+}
+// Tableau's discrete "Month, Year" custom date part can surface as a small
+// internal integer via DataValue.value instead of a real timestamp — new
+// Date(2) resolves to Jan 1970, not the intended month. formattedValue
+// carries the human-readable string, which Date() parses correctly.
+function toYearMonth(dateVal, formattedValue) {
+  if (dateVal instanceof Date) return { y: dateVal.getFullYear(), m: dateVal.getMonth() + 1 };
+  if (formattedValue) {
+    const fd = new Date(formattedValue);
+    if (!Number.isNaN(fd.getTime())) return { y: fd.getFullYear(), m: fd.getMonth() + 1 };
+  }
+  const d = new Date(dateVal);
+  return { y: d.getFullYear(), m: d.getMonth() + 1 };
+}
+function extractYear(dateVal, formattedValue) {
+  if (dateVal instanceof Date) return dateVal.getFullYear();
+  const n = Number(dateVal);
+  if (!Number.isNaN(n) && n > 1900 && n < 3000) return n;
+  if (formattedValue) {
+    const fd = new Date(formattedValue);
+    if (!Number.isNaN(fd.getTime())) return fd.getFullYear();
+  }
+  const d = new Date(dateVal);
+  return Number.isNaN(d.getTime()) ? null : d.getFullYear();
+}
+
+async function fetchWorksheetRows(worksheet) {
+  const reader = await worksheet.getSummaryDataReaderAsync(undefined, { ignoreSelection: true });
+  const colIndex = {};
+  const rows = [];
+  try {
+    for (let page = 0; page < reader.pageCount; page++) {
+      const dataTablePage = await reader.getPageAsync(page);
+      if (page === 0) dataTablePage.columns.forEach((c) => { colIndex[unwrapCaption(c.fieldName)] = c.index; });
+      for (let i = 0; i < dataTablePage.data.length; i++) rows.push(dataTablePage.data[i]);
+    }
+  } finally {
+    await reader.releaseAsync();
+  }
+  return { rows, colIndex };
+}
+function val(row, colIndex, field) {
+  const idx = colIndex[field];
+  if (idx === undefined) return undefined;
+  const dv = row[idx];
+  return dv ? dv.value : undefined;
+}
+function formattedVal(row, colIndex, field) {
+  const idx = colIndex[field];
+  if (idx === undefined) return undefined;
+  const dv = row[idx];
+  return dv ? dv.formattedValue : undefined;
+}
+function addYear(obj, key, year, netSales, qty) {
+  if (!obj[key]) obj[key] = {};
+  if (!obj[key][year]) obj[key][year] = { netSales: 0, qty: 0 };
+  obj[key][year].netSales += netSales;
+  obj[key][year].qty += qty;
+}
+function mapWithGrowth(obj, currentYear, priorYear) {
+  return Object.entries(obj).map(([k, v]) => {
+    const c = v[currentYear] || { netSales: 0, qty: 0 };
+    const p = v[priorYear] || { netSales: 0, qty: 0 };
+    return { k, netSales: c.netSales, qty: c.qty, prior: p.netSales, growth: growth(c.netSales, p.netSales) };
+  }).sort((a, b) => b.netSales - a.netSales);
+}
+
+async function classifyWorksheets(worksheets) {
+  const byName = { trend: null, detail: null, allVendors: null };
+  for (const ws of worksheets) {
+    const n = ws.name.toLowerCase();
+    if (n.includes('allvendor') || n.includes('all vendor')) byName.allVendors = ws;
+    else if (n.includes('detail')) byName.detail = ws;
+    else if (n.includes('trend')) byName.trend = ws;
+  }
+  const result = {};
+  for (const key of ['trend', 'detail', 'allVendors']) {
+    if (byName[key]) result[key] = await fetchWorksheetRows(byName[key]);
+  }
+  return result;
+}
+
+function computeTrendPart(rows, colIndex) {
+  const monthly = {}, totals = {}, byOffice = {};
+  let years = new Set();
+  for (const row of rows) {
+    const dateVal = val(row, colIndex, FIELD.DATE);
+    if (!dateVal) continue;
+    const { y, m } = toYearMonth(dateVal, formattedVal(row, colIndex, FIELD.DATE));
+    const year = String(y);
+    years.add(year);
+    const netSales = Number(val(row, colIndex, FIELD.NET_SALES)) || 0;
+    const qty = Number(val(row, colIndex, FIELD.QTY)) || 0;
+    const monthKey = year + '-' + String(m).padStart(2, '0');
+    if (!monthly[monthKey]) monthly[monthKey] = { netSales: 0, qty: 0 };
+    monthly[monthKey].netSales += netSales; monthly[monthKey].qty += qty;
+    if (!totals[year]) totals[year] = { netSales: 0, qty: 0 };
+    totals[year].netSales += netSales; totals[year].qty += qty;
+    const office = val(row, colIndex, FIELD.OFFICE);
+    if (office) addYear(byOffice, office, year, netSales, qty);
+  }
+  const yearList = Array.from(years).sort();
+  if (!yearList.length) throw new Error('No dated rows found in the Trend worksheet.');
+  const currentYear = yearList[yearList.length - 1];
+  const priorYear = String(Number(currentYear) - 1);
+  const monthsPresent = Array.from(new Set(Object.keys(monthly).filter((k) => k.startsWith(currentYear + '-')).map((k) => Number(k.slice(5))))).sort((a, b) => a - b);
+  function monthlyOf(year, m) { return monthly[year + '-' + String(m).padStart(2, '0')] || { netSales: 0, qty: 0 }; }
+  const cur = totals[currentYear] || { netSales: 0, qty: 0 };
+  const pri = totals[priorYear] || { netSales: 0, qty: 0 };
+  const maxDateKey = Object.keys(monthly).filter((k) => k.startsWith(currentYear + '-')).sort().slice(-1)[0];
+  const maxMonth = maxDateKey ? Number(maxDateKey.slice(5)) : monthsPresent[monthsPresent.length - 1];
+  const monthLabels = monthsPresent.map((m) => monthAbbr[m]);
+  const monthRangeLabel = monthLabels.length > 1 ? (monthLabels[0] + '–' + monthLabels[monthLabels.length - 1]) : monthLabels[0];
+  return {
+    currentYear, priorYear,
+    meta: {
+      title: 'Vendor Business Review',
+      subtitle: monthRangeLabel + ' ' + currentYear + ' vs ' + monthRangeLabel + ' ' + priorYear,
+      asOf: monthAbbr[maxMonth] + ' ' + currentYear,
+    },
+    kpiCore: {
+      netSales: {
+        v2026: cur.netSales, v2025: pri.netSales,
+        sparklineCur: monthsPresent.map((m) => monthlyOf(currentYear, m).netSales),
+        sparklinePrior: monthsPresent.map((m) => monthlyOf(priorYear, m).netSales),
+      },
+      qty: {
+        v2026: cur.qty, v2025: pri.qty,
+        sparklineCur: monthsPresent.map((m) => monthlyOf(currentYear, m).qty),
+        sparklinePrior: monthsPresent.map((m) => monthlyOf(priorYear, m).qty),
+      },
+      aov: {
+        v2026: cur.qty ? cur.netSales / cur.qty : 0, v2025: pri.qty ? pri.netSales / pri.qty : 0,
+        sparklineCur: monthsPresent.map((m) => { const v = monthlyOf(currentYear, m); return v.qty ? v.netSales / v.qty : 0; }),
+        sparklinePrior: monthsPresent.map((m) => { const v = monthlyOf(priorYear, m); return v.qty ? v.netSales / v.qty : 0; }),
+      },
+    },
+    trend: { months: monthLabels, cur: monthsPresent.map((m) => monthlyOf(currentYear, m).netSales), prior: monthsPresent.map((m) => monthlyOf(priorYear, m).netSales) },
+    office: mapWithGrowth(byOffice, currentYear, priorYear),
+  };
+}
+
+function computeDetailPart(rows, colIndex, currentYear, priorYear) {
+  const byBrand = {}, byMch1 = {}, byMch2 = {}, byPriceSegment = {}, byChannel = {}, byArticle = {};
+  const skuSetsByPriceSegment = {}, skuSetsByMch1 = {}, skuSetsByChannel = {};
+  let vendorName = null;
+  for (const row of rows) {
+    const dateVal = val(row, colIndex, FIELD.DATE);
+    if (!dateVal) continue;
+    const y = extractYear(dateVal, formattedVal(row, colIndex, FIELD.DATE));
+    if (y === null) continue;
+    const year = String(y);
+    const netSales = Number(val(row, colIndex, FIELD.NET_SALES)) || 0;
+    const qty = Number(val(row, colIndex, FIELD.QTY)) || 0;
+    const articleId = val(row, colIndex, FIELD.ARTICLE_ID);
+    const brand = val(row, colIndex, FIELD.BRAND);
+    const mch1 = val(row, colIndex, FIELD.MCH1);
+    const mch2 = val(row, colIndex, FIELD.MCH2);
+    const priceSegment = val(row, colIndex, FIELD.PRICE_SEGMENT);
+    const channel = val(row, colIndex, FIELD.CHANNEL);
+    const articleName = val(row, colIndex, FIELD.ARTICLE_NAME);
+    const mc = val(row, colIndex, FIELD.MC);
+    if (!vendorName) vendorName = val(row, colIndex, FIELD.VENDOR);
+
+    if (brand) addYear(byBrand, brand, year, netSales, qty);
+    if (mch1) addYear(byMch1, mch1, year, netSales, qty);
+    if (mch2) addYear(byMch2, mch2, year, netSales, qty);
+    if (channel) addYear(byChannel, channel, year, netSales, qty);
+    if (articleId && mch1) {
+      if (!skuSetsByMch1[mch1]) skuSetsByMch1[mch1] = {};
+      if (!skuSetsByMch1[mch1][year]) skuSetsByMch1[mch1][year] = new Set();
+      skuSetsByMch1[mch1][year].add(articleId);
+    }
+    if (articleId && channel) {
+      if (!skuSetsByChannel[channel]) skuSetsByChannel[channel] = {};
+      if (!skuSetsByChannel[channel][year]) skuSetsByChannel[channel][year] = new Set();
+      skuSetsByChannel[channel][year].add(articleId);
+    }
+    if (priceSegment) {
+      addYear(byPriceSegment, priceSegment, year, netSales, qty);
+      if (articleId) {
+        if (!skuSetsByPriceSegment[priceSegment]) skuSetsByPriceSegment[priceSegment] = {};
+        if (!skuSetsByPriceSegment[priceSegment][year]) skuSetsByPriceSegment[priceSegment][year] = new Set();
+        skuSetsByPriceSegment[priceSegment][year].add(articleId);
+      }
+    }
+    if (articleId) {
+      if (!byArticle[articleId]) byArticle[articleId] = { name: articleName, brand, mch1, mc };
+      if (!byArticle[articleId][year]) byArticle[articleId][year] = { netSales: 0, qty: 0 };
+      byArticle[articleId][year].netSales += netSales;
+      byArticle[articleId][year].qty += qty;
+    }
+  }
+
+  const productGroupTotals = {}, productGroupSkuSets = {};
+  for (const [mch1, v] of Object.entries(byMch1)) {
+    const g = groupFor(mch1);
+    if (!productGroupTotals[g]) productGroupTotals[g] = {};
+    if (!productGroupSkuSets[g]) productGroupSkuSets[g] = new Set();
+    const c = v[currentYear] || { netSales: 0, qty: 0 };
+    const p = v[priorYear] || { netSales: 0, qty: 0 };
+    if (!productGroupTotals[g][currentYear]) productGroupTotals[g][currentYear] = { netSales: 0, qty: 0 };
+    if (!productGroupTotals[g][priorYear]) productGroupTotals[g][priorYear] = { netSales: 0, qty: 0 };
+    productGroupTotals[g][currentYear].netSales += c.netSales; productGroupTotals[g][currentYear].qty += c.qty;
+    productGroupTotals[g][priorYear].netSales += p.netSales; productGroupTotals[g][priorYear].qty += p.qty;
+    if (skuSetsByMch1[mch1] && skuSetsByMch1[mch1][currentYear]) {
+      for (const id of skuSetsByMch1[mch1][currentYear]) productGroupSkuSets[g].add(id);
+    }
+  }
+  const productGroupTotalSku = Object.values(productGroupSkuSets).reduce((s, set) => s + set.size, 0);
+  const productGroup = mapWithGrowth(productGroupTotals, currentYear, priorYear).map((it) => {
+    const skuCount = productGroupSkuSets[it.k] ? productGroupSkuSets[it.k].size : 0;
+    return { ...it, skuCount, skuShare: productGroupTotalSku ? skuCount / productGroupTotalSku : 0 };
+  });
+
+  const channelTotalSku = Object.keys(byChannel).reduce((s, k) => s + ((skuSetsByChannel[k] && skuSetsByChannel[k][currentYear]) ? skuSetsByChannel[k][currentYear].size : 0), 0);
+  const channel = mapWithGrowth(byChannel, currentYear, priorYear).map((it) => {
+    const skuCount = (skuSetsByChannel[it.k] && skuSetsByChannel[it.k][currentYear]) ? skuSetsByChannel[it.k][currentYear].size : 0;
+    return { ...it, skuCount, skuShare: channelTotalSku ? skuCount / channelTotalSku : 0 };
+  });
+
+  const totalSalesCurrent = Object.values(byPriceSegment).reduce((s, v) => s + ((v[currentYear] || {}).netSales || 0), 0);
+  const totalSkuCurrent = Object.keys(byPriceSegment).reduce((s, k) => s + ((skuSetsByPriceSegment[k] && skuSetsByPriceSegment[k][currentYear]) ? skuSetsByPriceSegment[k][currentYear].size : 0), 0);
+  const priceSegment = Object.keys(byPriceSegment).map((k) => {
+    const c = byPriceSegment[k][currentYear] || { netSales: 0, qty: 0 };
+    const p = byPriceSegment[k][priorYear] || { netSales: 0, qty: 0 };
+    const skuCount = (skuSetsByPriceSegment[k] && skuSetsByPriceSegment[k][currentYear]) ? skuSetsByPriceSegment[k][currentYear].size : 0;
+    return { k, netSales: c.netSales, prior: p.netSales, growth: growth(c.netSales, p.netSales), salesShare: totalSalesCurrent ? c.netSales / totalSalesCurrent : 0, skuCount, skuShare: totalSkuCurrent ? skuCount / totalSkuCurrent : 0 };
+  }).sort((a, b) => b.netSales - a.netSales);
+
+  const allArticles = Object.entries(byArticle)
+    .map(([id, v]) => ({
+      id, name: v.name, brand: v.brand, group: groupFor(v.mch1), mc: v.mc,
+      netSales2025: (v[priorYear] || { netSales: 0 }).netSales, netSales2026: (v[currentYear] || { netSales: 0 }).netSales,
+      qty2025: (v[priorYear] || { qty: 0 }).qty, qty2026: (v[currentYear] || { qty: 0 }).qty,
+    }))
+    .map((it) => ({ ...it, growthNetSales: growth(it.netSales2026, it.netSales2025), growthQty: growth(it.qty2026, it.qty2025) }));
+  const heroProducts = allArticles.slice().sort((a, b) => b.netSales2026 - a.netSales2026).slice(0, 10);
+  const heroProductsByQty = allArticles.slice().sort((a, b) => b.qty2026 - a.qty2026).slice(0, 10);
+
+  return {
+    vendorName,
+    brands: mapWithGrowth(byBrand, currentYear, priorYear),
+    productGroup,
+    mch2: mapWithGrowth(byMch2, currentYear, priorYear),
+    priceSegment,
+    channel,
+    heroProducts,
+    heroProductsByQty,
+    skuCount: { v2026: Object.keys(byArticle).filter((id) => byArticle[id][currentYear]).length, v2025: Object.keys(byArticle).filter((id) => byArticle[id][priorYear]).length },
+    activeBrand: Object.keys(byBrand).filter((k) => byBrand[k][currentYear]).length,
+    activeMch2: Object.keys(byMch2).filter((k) => byMch2[k][currentYear]).length,
+  };
+}
+
+function computeAllVendorsPart(rows, colIndex, currentYear, priorYear, thisVendorName) {
+  const byVendor = {};
+  const skuSetsByVendor = {};
+  for (const row of rows) {
+    const dateVal = val(row, colIndex, FIELD.DATE);
+    if (!dateVal) continue;
+    const y = extractYear(dateVal, formattedVal(row, colIndex, FIELD.DATE));
+    if (y === null) continue;
+    const year = String(y);
+    const vendor = val(row, colIndex, FIELD.VENDOR);
+    if (!vendor) continue;
+    const netSales = Number(val(row, colIndex, FIELD.NET_SALES)) || 0;
+    const qty = Number(val(row, colIndex, FIELD.QTY)) || 0;
+    addYear(byVendor, vendor, year, netSales, qty);
+    const articleId = val(row, colIndex, FIELD.ARTICLE_ID);
+    if (articleId) {
+      if (!skuSetsByVendor[vendor]) skuSetsByVendor[vendor] = {};
+      if (!skuSetsByVendor[vendor][year]) skuSetsByVendor[vendor][year] = new Set();
+      skuSetsByVendor[vendor][year].add(articleId);
+    }
+  }
+  const activeVendors = Object.keys(byVendor).filter((k) => byVendor[k][currentYear] && byVendor[k][currentYear].netSales > 0);
+  const bySales = activeVendors.slice().sort((a, b) => byVendor[b][currentYear].netSales - byVendor[a][currentYear].netSales);
+  const skuCountFor = (k) => (skuSetsByVendor[k] && skuSetsByVendor[k][currentYear]) ? skuSetsByVendor[k][currentYear].size : 0;
+  const bySku = activeVendors.slice().sort((a, b) => skuCountFor(b) - skuCountFor(a));
+  const companyTotal = activeVendors.reduce((s, k) => s + byVendor[k][currentYear].netSales, 0);
+  const companyTotalPrior = activeVendors.reduce((s, k) => s + ((byVendor[k][priorYear] || {}).netSales || 0), 0);
+  const rankSales = bySales.indexOf(thisVendorName) + 1;
+  const rankSku = bySku.indexOf(thisVendorName) + 1;
+  const thisVendorSales = (byVendor[thisVendorName] && byVendor[thisVendorName][currentYear] && byVendor[thisVendorName][currentYear].netSales) || 0;
+  const thisVendorSalesPrior = (byVendor[thisVendorName] && byVendor[thisVendorName][priorYear] && byVendor[thisVendorName][priorYear].netSales) || 0;
+  return {
+    activeVendorCount: activeVendors.length,
+    rankSales: rankSales || activeVendors.length,
+    rankSku: rankSku || activeVendors.length,
+    pctOfTotal: { v2026: companyTotal ? thisVendorSales / companyTotal : 0, v2025: companyTotalPrior ? thisVendorSalesPrior / companyTotalPrior : 0 },
+  };
+}
+
+function computeDashboardData(trendPart, detailPart, allVendorsPart) {
+  return {
+    vendorName: detailPart.vendorName || '—',
+    currentYear: trendPart.currentYear, priorYear: trendPart.priorYear,
+    meta: trendPart.meta,
+    kpi: {
+      netSales: trendPart.kpiCore.netSales, qty: trendPart.kpiCore.qty, aov: trendPart.kpiCore.aov,
+      sku: detailPart.skuCount, pctOfTotal: allVendorsPart.pctOfTotal,
+    },
+    vendorSnapshot: {
+      rankSales: allVendorsPart.rankSales, rankSku: allVendorsPart.rankSku, activeVendorCount: allVendorsPart.activeVendorCount,
+      activeBrand: detailPart.activeBrand, activeMch2: detailPart.activeMch2, share: allVendorsPart.pctOfTotal.v2026,
+    },
+    trend: trendPart.trend,
+    brands: detailPart.brands, productGroup: detailPart.productGroup, mch2: detailPart.mch2,
+    priceSegment: detailPart.priceSegment, office: trendPart.office, channel: detailPart.channel,
+    heroProducts: detailPart.heroProducts,
+    heroProductsByQty: detailPart.heroProductsByQty,
+  };
+}
+
+function showStatus(message, isError) {
+  const banner = document.getElementById('status-banner');
+  banner.textContent = message;
+  banner.style.background = isError ? '#d03b3b' : '#2a78d6';
+  banner.style.display = message ? 'block' : 'none';
+}
+
+async function loadAndRenderLive() {
+  try {
+    showStatus('Loading data from Tableau…', false);
+    const { trend, detail, allVendors } = await classifyWorksheets(tableau.extensions.dashboardContent.dashboard.worksheets);
+    if (!trend) throw new Error('Could not find a worksheet named "Trend".');
+    if (!detail) throw new Error('Could not find a worksheet named "Detail".');
+    if (!allVendors) throw new Error('Could not find a worksheet named "AllVendors".');
+    const trendPart = computeTrendPart(trend.rows, trend.colIndex);
+    const detailPart = computeDetailPart(detail.rows, detail.colIndex, trendPart.currentYear, trendPart.priorYear);
+    const allVendorsPart = computeAllVendorsPart(allVendors.rows, allVendors.colIndex, trendPart.currentYear, trendPart.priorYear, detailPart.vendorName);
+    renderDashboard(computeDashboardData(trendPart, detailPart, allVendorsPart));
+    showStatus('', false);
+  } catch (err) {
+    console.error(err);
+    showStatus('Error loading data: ' + err.message, true);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  renderDashboard(EXAMPLE_DATA);
+
+  // Skip live init outside an iframe (e.g. this file opened directly in a
+  // browser tab for layout review) — initializeAsync() only succeeds when
+  // Tableau is actually hosting the extension, so attempting it standalone
+  // just throws and shows a distracting error banner over the mock preview.
+  if (typeof tableau === 'undefined' || window.self === window.top) return;
+  tableau.extensions.initializeAsync().then(function () {
+    const dashboard = tableau.extensions.dashboardContent.dashboard;
+    dashboard.worksheets.forEach((ws) => {
+      ws.addEventListener(tableau.TableauEventType.FilterChanged, loadAndRenderLive);
+      ws.addEventListener(tableau.TableauEventType.SummaryDataChanged, loadAndRenderLive);
+    });
+    loadAndRenderLive();
+  }, function (err) {
+    showStatus('Error initializing extension: ' + err.toString(), true);
+  });
+});
+</script>
+</body>
+</html>

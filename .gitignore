@@ -1,0 +1,4 @@
+# Raw sales data / mapping workbooks — contain real Boonthavorn sales figures,
+# not needed to serve the extension via GitHub Pages. Keep these local only.
+*.xlsx
+~$*.xlsx
