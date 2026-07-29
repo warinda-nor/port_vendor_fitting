@@ -988,109 +988,6 @@ function renderDashboard(DATA) {
   clearAndRun('table-heroQty', (el) => renderHeroTable(el, 'Top 10 Products by Sales Qty', 'Ranked by Sales Qty', DATA.heroProductsByQty));
 }
 
-/* ================= example data (for standalone layout preview) =================
- * Real numbers for one vendor — บจก.ร็อคค่า บาธรูม โพรดักส์  (ไทยแลนด์) (Roca
- * Bathroom Products Thailand) — computed directly from "data form ds new.xlsx"
- * (Jan–Mar 2026 vs Jan–Mar 2025, the only months this vendor has 2026 data for).
- * Used to render a fully populated dashboard when this file is opened directly
- * in a browser (no Tableau host), so layout/format can be reviewed without a
- * live extension context. Replace with EXAMPLE_DATA once wired to the live
- * per-vendor Tableau pipeline. */
-const EXAMPLE_DATA = {
-  vendorName: 'บจก.ร็อคค่า บาธรูม โพรดักส์  (ไทยแลนด์)',
-  currentYear: 2026, priorYear: 2025,
-  meta: { title: 'Vendor Business Review', subtitle: 'Jan – Mar 2026 vs Jan – Mar 2025', asOf: 'Mar 2026' },
-  kpi: {
-    netSales: { v2026: 13217044.26, v2025: 14948534.01, sparklineCur: [4324989.95, 4172447.60, 4719606.71], sparklinePrior: [5177051.74, 4444692.47, 5326789.80] },
-    qty: { v2026: 6819, v2025: 7826, sparklineCur: [2405, 2182, 2232], sparklinePrior: [2880, 2257, 2689] },
-    sku: { v2026: 231, v2025: 241 },
-    aov: { v2026: 1938.27, v2025: 1910.11, sparklineCur: [1798.33, 1912.21, 2114.52], sparklinePrior: [1797.59, 1969.29, 1980.96] },
-    pctOfTotal: { v2026: 0.046874176761617176, v2025: 0.048597318164751865 },
-  },
-  vendorSnapshot: { rankSales: 7, rankSku: 10, activeVendorCount: 38, activeBrand: 2, activeMch2: 3, share: 0.046874176761617176 },
-  brands: [
-    { k: 'ROCA', netSales: 13193431.22, prior: 14769997.27 },
-    { k: 'JOHNSONSUISSE', netSales: 23613.04, prior: 178536.74 },
-  ],
-  productGroup: [
-    { k: 'Faucet', netSales: 4363595.28, prior: 4566609.98, skuCount: 97, skuShare: 0.4199134199134199 },
-    { k: 'Shower', netSales: 3500742.27, prior: 3819004.93, skuCount: 28, skuShare: 0.12121212121212122 },
-    { k: 'Accessories', netSales: 3196470.78, prior: 3735047.77, skuCount: 66, skuShare: 0.2857142857142857 },
-    { k: 'Spare Parts', netSales: 2156235.93, prior: 2827871.33, skuCount: 40, skuShare: 0.17316017316017315 },
-  ],
-  mch2: [
-    { k: 'ก๊อกน้ำ/ฝักบัว', netSales: 7864337.55, prior: 8385614.91 },
-    { k: 'อุปกรณ์ห้องน้ำ', netSales: 3196470.78, prior: 3735047.77 },
-    { k: 'อะไหล่ห้องน้ำ', netSales: 2156235.93, prior: 2827871.33 },
-  ],
-  priceSegment: [
-    { k: 'PREMIUM', netSales: 6240639.51, prior: 7058722.68, salesShare: 0.4721660446342485, skuCount: 92, skuShare: 0.39826839826839827 },
-    { k: 'MASS', netSales: 4149225.71, prior: 4604771.19, salesShare: 0.31392992475308545, skuCount: 82, skuShare: 0.354978354978355 },
-    { k: 'LUXURY', netSales: 1822110.89, prior: 2371822.52, salesShare: 0.1378606936737307, skuCount: 19, skuShare: 0.08225108225108226 },
-    { k: 'ECO', netSales: 1005068.15, prior: 913217.62, salesShare: 0.07604333693893525, skuCount: 38, skuShare: 0.1645021645021645 },
-  ],
-  office: [
-    { k: 'รัชดา', netSales: 2554099.77, prior: 3203964.15 },
-    { k: 'บางนา', netSales: 1974785.22, prior: 2762542.70 },
-    { k: 'เกษตร-นวมินทร์', netSales: 1744592.92, prior: 1685464.46 },
-    { k: 'หัวหิน', netSales: 1647704.08, prior: 977118.88 },
-    { k: 'พุทธมณฑล', netSales: 1101847.10, prior: 1196627.52 },
-    { k: 'สุราษฎร์ธานี', netSales: 770757.80, prior: 1414774.99 },
-    { k: 'พัทยา', netSales: 603562.16, prior: 665315.22 },
-    { k: 'พระราม 2', netSales: 548179.28, prior: 724655.18 },
-    { k: 'รังสิต-สำนักงานใหญ่', netSales: 545615.31, prior: 546192.98 },
-    { k: 'เชียงใหม่', netSales: 507968.07, prior: 337697.36 },
-    { k: 'ECOMMERCE', netSales: 390522.00, prior: 307439.00 },
-    { k: 'ราชพฤกษ์', netSales: 321045.31, prior: 335168.74 },
-    { k: 'อุดรธานี', netSales: 222192.48, prior: 428561.37 },
-    { k: 'DC รังสิต BTCL', netSales: 125044.16, prior: 104585.16 },
-    { k: 'ระยอง', netSales: 108708.00, prior: 132375.00 },
-    { k: 'พิษณุโลก', netSales: 50420.60, prior: 2289.20 },
-    { k: 'โคราช', netSales: 0, prior: 91963.40 },
-    { k: 'สัตหีบ', netSales: 0, prior: 31798.70 },
-  ],
-  channel: [
-    { k: 'Showroom', netSales: 12679759.44, prior: 14539260.09, skuCount: 229, skuShare: 0.7363344051446945 },
-    { k: 'Web', netSales: 390522, prior: 302045, skuCount: 46, skuShare: 0.14790996784565916 },
-    { k: 'Anyhome', netSales: 146762.82, prior: 101834.92, skuCount: 36, skuShare: 0.1157556270096463 },
-    { k: 'Anyhome(Online)', netSales: 0, prior: 5394, skuCount: 0, skuShare: 0 },
-  ],
-  heroProducts: [
-    { id: '1276404', name: 'A5A9B10C0N PIANO-Tชุดฝักบัวอาบน้ำครบชุด', brand: 'ROCA', group: 'Shower', mc: 'เรนชาวเวอร์', netSales2025: 0, netSales2026: 1006789.46, qty2025: 0, qty2026: 65 },
-    { id: '1253955', name: 'A812430000 MOON กระจกLED 100x80', brand: 'ROCA', group: 'Accessories', mc: 'กระจกพร้อมไฟ', netSales2025: 756295.94, netSales2026: 682405.32, qty2025: 93, qty2026: 81 },
-    { id: '1246273', name: 'A812412000 กระจกไฟ MOON LED 600x800mm.', brand: 'ROCA', group: 'Accessories', mc: 'กระจกพร้อมไฟ', netSales2025: 936676.47, netSales2026: 658031.39, qty2025: 197, qty2026: 135 },
-    { id: '1251533', name: 'A8900700C0 DUPLO ONE หม้อน้ำซ่อนผนัง', brand: 'ROCA', group: 'Spare Parts', mc: 'อะไหล่หม้อน้ำ', netSales2025: 545709.39, netSales2026: 323451.00, qty2025: 45, qty2026: 25 },
-    { id: '1261415', name: 'A5B5551C0T MODICA-LITE ชุดเรนชาวเวอร์', brand: 'ROCA', group: 'Shower', mc: 'เรนชาวเวอร์', netSales2025: 275814.52, netSales2026: 277751.29, qty2025: 60, qty2026: 59 },
-    { id: '1110056', name: 'A506404130 ท่อน้ำทิ้ง P-trap (ทองเหลือง)', brand: 'ROCA', group: 'Spare Parts', mc: 'ท่อน้ำทิ้ง', netSales2025: 392907.69, netSales2026: 273101.61, qty2025: 625, qty2026: 422 },
-    { id: '1276403', name: 'A5A9B10NBN PIANO-T ชุดฝักบัวอาบน้ำครบชุด', brand: 'ROCA', group: 'Shower', mc: 'เรนชาวเวอร์', netSales2025: 0, netSales2026: 241933.08, qty2025: 0, qty2026: 14 },
-    { id: '1252013', name: 'A5A9B90C00 EVEN-M ชุดฝักบัวก้านแข็งพร้อม', brand: 'ROCA', group: 'Shower', mc: 'เรนชาวเวอร์', netSales2025: 434476.14, netSales2026: 221601.60, qty2025: 32, qty2026: 16 },
-    { id: '1261470', name: 'A812450000 MOON PLUS กระจกไฟทรงกลม 80CM.', brand: 'ROCA', group: 'Accessories', mc: 'กระจกพร้อมไฟ', netSales2025: 77211.56, netSales2026: 220226.90, qty2025: 11, qty2026: 29 },
-    { id: '1251372', name: 'A5A9A2ECN2 EVEN-T ชุดฝักบัวก้านแข็ง ดำ', brand: 'ROCA', group: 'Shower', mc: 'เรนชาวเวอร์', netSales2025: 167985.60, netSales2026: 191952.00, qty2025: 4, qty2026: 5 },
-  ],
-  heroProductsByQty: [
-    { id: '1110058', name: 'A525159600 วาล์วปิด-เปิดน้ำ', brand: 'ROCA', group: 'Faucet', mc: 'สต็อปวาล์ว', netSales2025: 176388.70, netSales2026: 160797.49, qty2025: 511, qty2026: 441 },
-    { id: '1110056', name: 'A506404130 ท่อน้ำทิ้ง P-trap (ทองเหลือง)', brand: 'ROCA', group: 'Spare Parts', mc: 'ท่อน้ำทิ้ง', netSales2025: 392907.69, netSales2026: 273101.61, qty2025: 625, qty2026: 422 },
-    { id: '1139578', name: 'A5260000TH สายน้ำดีสแตนเลสถักยาว 18 นิ้ว', brand: 'ROCA', group: 'Spare Parts', mc: 'สายน้ำดี', netSales2025: 89355.30, netSales2026: 64841.40, qty2025: 569, qty2026: 391 },
-    { id: '1258198', name: 'A5A008SSTH ตะแกรงระบายน้ำสเตนเลส', brand: 'ROCA', group: 'Spare Parts', mc: 'ตะแกรงกันกลิ่น', netSales2025: 150911.99, netSales2026: 161100.71, qty2025: 346, qty2026: 363 },
-    { id: '1110027', name: 'A525431400 สะดืออ่างล้างหน้าแบบป๊อบอัพ', brand: 'ROCA', group: 'Spare Parts', mc: 'สะดืออ่างล้างหน้า', netSales2025: 166761.14, netSales2026: 124560.61, qty2025: 350, qty2026: 263 },
-    { id: '1258196', name: 'A5A001BRTH ตะแกรงระบายน้ำทองเหลือง100m.', brand: 'ROCA', group: 'Spare Parts', mc: 'ตะแกรงกันกลิ่น', netSales2025: 46515.60, netSales2026: 115727.47, qty2025: 80, qty2026: 197 },
-    { id: '1110030', name: 'A525159500 วาล์วปิด-เปิดน้ำ', brand: 'ROCA', group: 'Faucet', mc: 'สต็อปวาล์ว', netSales2025: 79245.92, netSales2026: 54287.44, qty2025: 279, qty2026: 192 },
-    { id: '1110026', name: 'A506404120 ท่อน้ำทิ้งแบบกระปุก 33 ซม.', brand: 'ROCA', group: 'Spare Parts', mc: 'ท่อน้ำทิ้ง', netSales2025: 43666.95, netSales2026: 110394.10, qty2025: 64, qty2026: 177 },
-    { id: '1124089', name: 'A525159400 วาล์วเปิด-ปิดน้ำ (เข้า1ออก2)', brand: 'ROCA', group: 'Faucet', mc: 'สต็อปวาล์ว', netSales2025: 79368.92, netSales2026: 58006.00, qty2025: 202, qty2026: 148 },
-    { id: '1246273', name: 'A812412000 กระจกไฟ MOON LED 600x800mm.', brand: 'ROCA', group: 'Accessories', mc: 'กระจกพร้อมไฟ', netSales2025: 936676.47, netSales2026: 658031.39, qty2025: 197, qty2026: 135 },
-  ],
-};
-EXAMPLE_DATA.trend = { months: ['Jan', 'Feb', 'Mar'], cur: EXAMPLE_DATA.kpi.netSales.sparklineCur, prior: EXAMPLE_DATA.kpi.netSales.sparklinePrior };
-[EXAMPLE_DATA.brands, EXAMPLE_DATA.productGroup, EXAMPLE_DATA.mch2, EXAMPLE_DATA.office, EXAMPLE_DATA.channel, EXAMPLE_DATA.priceSegment].forEach((list) => {
-  list.forEach((it) => { it.growth = growth(it.netSales, it.prior); });
-});
-[EXAMPLE_DATA.heroProducts, EXAMPLE_DATA.heroProductsByQty].forEach((list) => {
-  list.forEach((it) => {
-    it.growthNetSales = growth(it.netSales2026, it.netSales2025);
-    it.growthQty = growth(it.qty2026, it.qty2025);
-  });
-});
-
 /* ================= LIVE TABLEAU DATA PIPELINE =================
  * Three worksheets, classified by name (case-insensitive substring match) so
  * the dashboard author can lay them out in any order:
@@ -1466,13 +1363,15 @@ async function loadAndRenderLive() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  renderDashboard(EXAMPLE_DATA);
-
-  // Skip live init outside an iframe (e.g. this file opened directly in a
-  // browser tab for layout review) — initializeAsync() only succeeds when
-  // Tableau is actually hosting the extension, so attempting it standalone
-  // just throws and shows a distracting error banner over the mock preview.
-  if (typeof tableau === 'undefined' || window.self === window.top) return;
+  // No mock data here by design — this file only renders live Tableau data.
+  // Outside an iframe (e.g. opened directly in a browser tab), there's no
+  // Tableau host to load from, so just show a status message and leave the
+  // cards empty rather than attempting initializeAsync() (which would only
+  // throw) or faking numbers.
+  if (typeof tableau === 'undefined' || window.self === window.top) {
+    showStatus('This extension only renders inside a Tableau dashboard.', false);
+    return;
+  }
   tableau.extensions.initializeAsync().then(function () {
     const dashboard = tableau.extensions.dashboardContent.dashboard;
     dashboard.worksheets.forEach((ws) => {
