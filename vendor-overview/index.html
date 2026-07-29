@@ -1144,7 +1144,13 @@ function computeTrendPart(rows, colIndex) {
     if (office) addYear(byOffice, office, year, netSales, qty);
   }
   const yearList = Array.from(years).sort();
-  if (!yearList.length) throw new Error('No dated rows found in the Trend worksheet.');
+  if (!yearList.length) {
+    const idx = colIndex[FIELD.DATE];
+    const sample = rows[0] ? rows[0][idx] : undefined;
+    throw new Error('No dated rows found in the Trend worksheet. Diagnostic: rows=' + rows.length
+      + ', dateColumnIndex=' + idx + ', sampleValue=' + JSON.stringify(sample && sample.value)
+      + ', sampleFormatted=' + JSON.stringify(sample && sample.formattedValue));
+  }
   const currentYear = yearList[yearList.length - 1];
   const priorYear = String(Number(currentYear) - 1);
   const monthsPresent = Array.from(new Set(Object.keys(monthly).filter((k) => k.startsWith(currentYear + '-')).map((k) => Number(k.slice(5))))).sort((a, b) => a - b);
