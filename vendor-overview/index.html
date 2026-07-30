@@ -669,13 +669,13 @@ function renderDonut(container, title, sub, items, colors, opts) {
     const label = document.createElementNS(svgNS, 'text');
     label.setAttribute('x', anchorX); label.setAttribute('y', y - 4); label.setAttribute('dy', '0.32em');
     label.setAttribute('text-anchor', rightSide ? 'start' : 'end');
-    label.setAttribute('font-size', '13'); label.setAttribute('font-weight', '700'); label.setAttribute('fill', 'var(--text-primary)');
+    label.setAttribute('font-size', '12'); label.setAttribute('font-weight', '700'); label.setAttribute('fill', 'var(--text-primary)');
     label.textContent = it.k + ' - ' + (share*100).toFixed(2) + ' %';
     svg.appendChild(label);
     const g2 = growth(it.netSales, it.prior);
     const sub2 = document.createElementNS(svgNS, 'text');
     sub2.setAttribute('x', anchorX); sub2.setAttribute('y', y + 9); sub2.setAttribute('dy', '0.32em');
-    sub2.setAttribute('text-anchor', rightSide ? 'start' : 'end'); sub2.setAttribute('font-size', '12'); sub2.setAttribute('fill', 'var(--text-muted)');
+    sub2.setAttribute('text-anchor', rightSide ? 'start' : 'end'); sub2.setAttribute('font-size', '11'); sub2.setAttribute('fill', 'var(--text-muted)');
     const tspanMoney = document.createElementNS(svgNS, 'tspan');
     tspanMoney.textContent = fmtMoney(it.netSales) + ' (';
     sub2.appendChild(tspanMoney);
