@@ -131,6 +131,7 @@
     color: var(--text-primary);
   }
   .card p.sub { margin: 0 0 12px; font-size: 12.5px; color: var(--text-muted); }
+  .card-row4 { padding-bottom: 38px; }
 
   .col-2 { grid-column: span 2; }
   .col-3 { grid-column: span 3; }
@@ -272,10 +273,9 @@
     <div class="card col-4" id="chart-office"></div>
     <div class="card col-8" id="chart-trend"></div>
 
-    <div class="card col-3" id="chart-brand"></div>
-    <div class="card col-3" id="table-channel"></div>
-    <div class="card col-3" id="chart-productGroup"></div>
-    <div class="card col-3" id="chart-priceSegment"></div>
+    <div class="card col-4 card-row4" id="table-channel"></div>
+    <div class="card col-4 card-row4" id="chart-productGroup"></div>
+    <div class="card col-4 card-row4" id="chart-priceSegment"></div>
 
     <div class="card col-12" id="table-hero"></div>
     <div class="card col-12" id="table-heroQty"></div>
@@ -389,8 +389,11 @@ function renderVendorCard(container, opts) {
     container.appendChild(en);
   }
   const chips = document.createElement('div'); chips.className = 'vendor-chips-row';
+  const brandTotal = opts.brands.reduce((s, b) => s + b.netSales, 0);
   opts.brands.forEach((b) => {
-    const chip = document.createElement('span'); chip.className = 'vendor-brand-chip'; chip.textContent = b;
+    const share = brandTotal ? b.netSales / brandTotal : 0;
+    const chip = document.createElement('span'); chip.className = 'vendor-brand-chip';
+    chip.textContent = b.k + ' - ' + fmtShare(share, 0) + ' (' + fmtMoney(b.netSales) + ' | ' + arrow(b.growth) + ' ' + fmtPct(b.growth, 2) + ')';
     chips.appendChild(chip);
   });
   if (opts.mch2 && opts.mch2.length) {
@@ -930,7 +933,7 @@ function renderDashboard(DATA) {
   const priorLabel = String(DATA.priorYear);
 
   // Row 1: Vendor + Vendor Snapshot
-  clearAndRun('card-vendor', (el) => renderVendorCard(el, { vendorName: DATA.vendorName, brands: DATA.brands.map((b) => b.k), mch2: DATA.mch2.map((m) => m.k) }));
+  clearAndRun('card-vendor', (el) => renderVendorCard(el, { vendorName: DATA.vendorName, brands: DATA.brands, mch2: DATA.mch2.map((m) => m.k) }));
   clearAndRun('card-snapshot', (el) => renderSnapshotCard(el, DATA.vendorSnapshot));
 
   // Row 2: KPI strip
@@ -953,17 +956,11 @@ function renderDashboard(DATA) {
   const trendRangeLabel = trendMonths.length > 1 ? (trendMonths[0] + '–' + trendMonths[trendMonths.length - 1]) : (trendMonths[0] || '—');
   clearAndRun('chart-trend', (el) => renderTrendChart(el, 'Net Sales Trend (' + trendRangeLabel + ')', 'Unit: THB · ' + yearCur + ' vs ' + yearPrior + ' · %Growth labeled at each ' + yearCur + ' point', DATA.trend.months, DATA.trend.cur, DATA.trend.prior, DATA.currentYear, DATA.priorYear));
 
-  // Row 4: Sales by Brand / Channel / Product Group / Price Segment
+  // Row 4: Sales by Channel / Product Group / Price Segment
   // Rows for near-zero-share slices are dropped from the detail table too — same
   // cutoff used to hide their donut labels, so the table doesn't list clutter the
   // chart itself doesn't call out.
   const MIN_ROW_SHARE = 0.01;
-
-  const brandTotal = DATA.brands.reduce((s, it) => s + it.netSales, 0);
-  clearAndRun('chart-brand', (el) => renderDonut(el, 'Sales by Brand', 'Share of Net Sales ' + yearCur, DATA.brands, ['#7978B1', '#EDA100'], {
-    detailHeaders: ['Brand', 'Net Sales', 'Share %', 'Growth %'],
-    detailRows: DATA.brands.filter((it) => it.netSales / (brandTotal || 1) >= MIN_ROW_SHARE).map((it) => [it.k, fmtMoney(it.netSales), fmtShare(it.netSales / (brandTotal || 1), 1), growthCell(it.growth)]),
-  }));
 
   const channelTotal = DATA.channel.reduce((s, it) => s + it.netSales, 0);
   clearAndRun('table-channel', (el) => renderDonut(el, 'Sales by Channel', 'Share of Net Sales ' + yearCur, DATA.channel, ['#00AFB9', '#F07167', '#8A6FBF', '#C3C2B7'], {
