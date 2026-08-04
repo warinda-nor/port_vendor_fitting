@@ -885,7 +885,7 @@ function renderHeroTable(container, title, sub, items) {
   const p = document.createElement('p'); p.className = 'sub'; p.textContent = sub; container.appendChild(p);
   const table = document.createElement('table'); table.className = 'data-table';
   const thead = document.createElement('thead'); const headRow = document.createElement('tr');
-  const headers = ['#', 'Article Id', 'Article Name', 'Brand', 'Product Group', 'Mc Desc', 'Net Sales 2025', 'Net Sales 2026', 'Growth Net Sales', 'Sales Qty 2025', 'Sales Qty 2026', 'Growth Sales Qty'];
+  const headers = ['#', 'Article Id', 'Image', 'Article Name', 'Brand', 'Product Group', 'Mc Desc', 'Net Sales 2025', 'Net Sales 2026', 'Growth Net Sales', 'Sales Qty 2025', 'Sales Qty 2026', 'Growth Sales Qty'];
   const numCols = new Set(['Net Sales 2025', 'Net Sales 2026', 'Growth Net Sales', 'Sales Qty 2025', 'Sales Qty 2026', 'Growth Sales Qty']);
   headers.forEach((label) => { const th = document.createElement('th'); if (numCols.has(label)) th.className = 'num'; th.textContent = label; headRow.appendChild(th); });
   thead.appendChild(headRow); table.appendChild(thead);
@@ -897,6 +897,24 @@ function renderHeroTable(container, title, sub, items) {
     }
     addCell(String(idx + 1), 'rank');
     addCell(it.id);
+
+    const imgTd = document.createElement('td');
+    const img = document.createElement('img');
+    img.src = 'https://productimage.boonthavorn.com/o2/' + encodeURIComponent(it.id);
+    img.alt = it.name;
+    img.style.width = '40px'; img.style.height = '40px'; img.style.objectFit = 'contain';
+    img.style.borderRadius = '4px'; img.style.background = '#ffffff'; img.style.border = '1px solid var(--grid)';
+    img.onerror = function () {
+      const placeholder = document.createElement('div');
+      placeholder.style.width = '40px'; placeholder.style.height = '40px'; placeholder.style.borderRadius = '4px';
+      placeholder.style.background = 'var(--grid)'; placeholder.style.display = 'flex'; placeholder.style.alignItems = 'center';
+      placeholder.style.justifyContent = 'center'; placeholder.style.fontSize = '9px'; placeholder.style.color = 'var(--text-muted)';
+      placeholder.textContent = 'N/A';
+      imgTd.replaceChildren(placeholder);
+    };
+    imgTd.appendChild(img);
+    tr.appendChild(imgTd);
+
     addCell(it.name, 'name');
     addCell(it.brand);
     addCell(it.group);
