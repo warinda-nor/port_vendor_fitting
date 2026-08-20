@@ -1,6 +1,6 @@
 # Vendor Business Review — Tableau Extension
 
-Dashboard extension สำหรับดูภาพรวมการขายแยกตาม Vendor แต่ละราย (Net Sales, Sale Qty, AOV, SKU Count, Sales Trend, Sales by Brand/Channel/Product Group/Price Segment/Sales Office, Top 10 Products) เทียบปีปัจจุบันกับปีก่อนหน้า
+Dashboard extension สำหรับดูภาพรวมการขายแยกตาม Vendor แต่ละราย (Net Sales, Sale Qty, AOV, SKU Count, Sales Trend, Sales by Brand/Channel/Product Group/Universe/Sales Office, Top 10 Products) เทียบปีปัจจุบันกับปีก่อนหน้า
 
 ## โครงสร้างไฟล์
 
@@ -89,7 +89,7 @@ Net Inc Tax, Sales Qty และ %Margin ทุกตัวต้อง split �
 | `Mc Desc` | คอลัมน์ "MC Desc" ในตาราง Top 10 |
 | `Brand` | Sales by Brand |
 | `Vendor Name` | ใช้แสดงชื่อ vendor ที่กำลังดู |
-| `Universe` | Sales by Price Segment |
+| `Universe` | Sales by Universe (เรียงลำดับคงที่ ECO > MASS > PREMIUM > LUXURY เสมอ ไม่เรียงตามยอดขาย) |
 | `Sls Grp Desc` | Sales by Channel |
 | `Net Inc Tax - CY`, `Net Inc Tax - LY` | ยอดขาย ปีปัจจุบัน/ปีก่อน |
 | `Sales Qty - CY`, `Sales Qty - LY` | จำนวนขาย ปีปัจจุบัน/ปีก่อน |

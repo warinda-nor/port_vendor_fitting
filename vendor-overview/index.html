@@ -975,8 +975,8 @@ function renderDashboard(DATA) {
   }));
 
   const priceSegmentTotal = DATA.priceSegment.reduce((s, it) => s + it.netSales, 0);
-  clearAndRun('chart-priceSegment', (el) => renderDonut(el, 'Sales by Price Segment', 'Share of Net Sales ' + yearCur, DATA.priceSegment, ['#9D7FB5', '#E8698F', '#7B93E0', '#5DBE8A'], {
-    detailHeaders: ['Segment', 'Net Sales', '%Share of Sales', '%Growth Sales', 'SKU Count', '%Share SKU'],
+  clearAndRun('chart-priceSegment', (el) => renderDonut(el, 'Sales by Universe', 'Share of Net Sales ' + yearCur, DATA.priceSegment, ['#9D7FB5', '#E8698F', '#7B93E0', '#5DBE8A'], {
+    detailHeaders: ['Universe', 'Net Sales', '%Share of Sales', '%Growth Sales', 'SKU Count', '%Share SKU'],
     detailRows: DATA.priceSegment.filter((it) => it.salesShare >= MIN_ROW_SHARE).map((it) => [it.k, fmtMoney(it.netSales), fmtShare(it.salesShare, 0), growthCell(it.growth), fmtInt(it.skuCount), fmtShare(it.skuShare, 0)]),
   }));
 
@@ -1021,6 +1021,7 @@ const FIELD = {
 };
 const PARAM_START_DATE = 'Start Date';
 const PARAM_END_DATE = 'End Date';
+const UNIVERSE_ORDER = ['ECO', 'MASS', 'PREMIUM', 'LUXURY'];
 const monthAbbr = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function unwrapCaption(name) {
@@ -1223,7 +1224,14 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
     const p = byPriceSegment[k][priorYear] || { netSales: 0, qty: 0 };
     const skuCount = (skuSetsByPriceSegment[k] && skuSetsByPriceSegment[k][currentYear]) ? skuSetsByPriceSegment[k][currentYear].size : 0;
     return { k, netSales: c.netSales, prior: p.netSales, growth: growth(c.netSales, p.netSales), salesShare: totalSalesCurrent ? c.netSales / totalSalesCurrent : 0, skuCount, skuShare: totalSkuCurrent ? skuCount / totalSkuCurrent : 0 };
-  }).sort((a, b) => b.netSales - a.netSales);
+  }).sort((a, b) => {
+    // Fixed display order regardless of sales size — not sorted by netSales
+    // like the other donuts, since ECO->LUXURY reads as a meaningful tier
+    // ladder that shouldn't reshuffle as the numbers change.
+    const ia = UNIVERSE_ORDER.indexOf(a.k), ib = UNIVERSE_ORDER.indexOf(b.k);
+    if (ia !== ib) return (ia === -1 ? UNIVERSE_ORDER.length : ia) - (ib === -1 ? UNIVERSE_ORDER.length : ib);
+    return b.netSales - a.netSales;
+  });
 
   const allArticles = Object.entries(byArticle)
     .map(([id, v]) => ({
