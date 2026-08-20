@@ -361,24 +361,6 @@ function clearAndRun(elementId, fn) {
   fn(el);
 }
 
-/* ================= product hierarchy (Group / MCH2 / MCH1) =================
- * Group is not a column in the source data — it's a business regrouping of the
- * "Mch1 Desc" field, defined in Data mapping.xlsx (sheet "แยกกลุ่มสีและประเภทสินค้า",
- * columns D:Group / F:MCH1). "MCH2_Desc" is a separate, coarser column that
- * already exists on every row (only 3 real values), so it's read directly
- * instead of being derived. */
-const MCH1_TO_GROUP = {
-  'กระจกห้องน้ำ': 'ACCESSORIES', 'อุปกรณ์เสริมภายในห้องน้ำ': 'ACCESSORIES', 'อุปกรณ์แขวนผ้า': 'ACCESSORIES',
-  'อุปกรณ์จัดเก็บในห้องน้ำ': 'ACCESSORIES', 'อุปกรณ์สำหรับผู้สูงอายุ': 'ACCESSORIES',
-  'ก๊อกทรงสูง': 'FAUCET', 'ก๊อกบิเด้': 'FAUCET', 'ก๊อกยืนอาบ': 'FAUCET', 'ก๊อกล้างพื้น': 'FAUCET',
-  'ก๊อกอ่างล้างหน้า': 'FAUCET', 'ก๊อกอ่างอาบน้ำ': 'FAUCET', 'ฟลัชวาล์ว': 'FAUCET', 'วาล์ว': 'FAUCET', 'สายฉีดชำระ': 'FAUCET',
-  'ชุดฝักบัว': 'SHOWER', 'ฝักบัว': 'SHOWER',
-  'ตะแกรงท่อน้ำ': 'SPARE PARTS', 'ฝารองนั่ง': 'SPARE PARTS', 'อะไหล่ก๊อกน้ำ/ฝักบัว': 'SPARE PARTS',
-  'อะไหล่สุขภัณฑ์': 'SPARE PARTS', 'อะไหล่อ่างล้างหน้า': 'SPARE PARTS', 'อะไหล่อ่างอาบน้ำ': 'SPARE PARTS',
-};
-const GROUP_LABEL = { ACCESSORIES: 'Accessories', FAUCET: 'Faucet', SHOWER: 'Shower', 'SPARE PARTS': 'Spare Parts' };
-function groupFor(mch1) { return GROUP_LABEL[MCH1_TO_GROUP[mch1]] || 'Other'; }
-
 /* ================= vendor identity card ================= */
 function renderVendorCard(container, opts) {
   const h = document.createElement('h3'); h.textContent = 'Vendor'; container.appendChild(h);
@@ -1025,7 +1007,7 @@ const FIELD = {
   ARTICLE_ID: 'Article Id',
   ARTICLE_NAME: 'Article Name Th',
   MCH2: 'MCH2_Desc',
-  MCH1: 'Mch1 Desc',
+  PRODUCT_GROUP: 'Product Group',
   MC: 'Mc Desc',
   BRAND: 'Brand',
   VENDOR: 'Vendor Name',
@@ -1102,9 +1084,9 @@ function mapWithGrowth(obj, currentYear, priorYear) {
 // one carries (from the same getSummaryDataReaderAsync fetch used to pull its
 // rows), so renaming or reorganizing worksheets on the dashboard later never
 // breaks this matching:
-//   - has Article Id + (Brand or Mch1 Desc)      -> "Detail"
-//   - has Article Id + Vendor Name (no Brand/Mch1) -> "AllVendors"
-//   - no Article Id, has Sls Ofc Desc            -> "Trend"
+//   - has Article Id + (Brand or Product Group)      -> "Detail"
+//   - has Article Id + Vendor Name (no Brand/Product Group) -> "AllVendors"
+//   - no Article Id, has Sls Ofc Desc                 -> "Trend"
 async function classifyWorksheets(worksheets) {
   // Fetched one at a time — concurrent getSummaryDataReaderAsync calls across
   // worksheets can trip Tableau's native bridge into a generic ExecuteCommand error.
@@ -1115,7 +1097,7 @@ async function classifyWorksheets(worksheets) {
   const has = (colIndex, key) => colIndex[FIELD[key]] !== undefined;
   const result = {};
   for (const f of fetched) {
-    if (has(f.colIndex, 'ARTICLE_ID') && (has(f.colIndex, 'BRAND') || has(f.colIndex, 'MCH1'))) {
+    if (has(f.colIndex, 'ARTICLE_ID') && (has(f.colIndex, 'BRAND') || has(f.colIndex, 'PRODUCT_GROUP'))) {
       if (!result.detail) result.detail = f;
     } else if (has(f.colIndex, 'ARTICLE_ID') && has(f.colIndex, 'VENDOR')) {
       if (!result.allVendors) result.allVendors = f;
@@ -1176,8 +1158,8 @@ function computeTrendPart(rows, colIndex, currentYear, priorYear) {
 }
 
 function computeDetailPart(rows, colIndex, currentYear, priorYear) {
-  const byBrand = {}, byMch1 = {}, byMch2 = {}, byPriceSegment = {}, byChannel = {}, byArticle = {};
-  const skuSetsByPriceSegment = {}, skuSetsByMch1 = {}, skuSetsByChannel = {};
+  const byBrand = {}, byProductGroup = {}, byMch2 = {}, byPriceSegment = {}, byChannel = {}, byArticle = {};
+  const skuSetsByPriceSegment = {}, skuSetsByProductGroup = {}, skuSetsByChannel = {};
   let vendorName = null;
   for (const row of rows) {
     const netCur = Number(val(row, colIndex, FIELD.NET_SALES_CY)) || 0;
@@ -1186,7 +1168,7 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
     const qtyPrior = Number(val(row, colIndex, FIELD.QTY_LY)) || 0;
     const articleId = val(row, colIndex, FIELD.ARTICLE_ID);
     const brand = val(row, colIndex, FIELD.BRAND);
-    const mch1 = val(row, colIndex, FIELD.MCH1);
+    const productGroup = val(row, colIndex, FIELD.PRODUCT_GROUP);
     const mch2 = val(row, colIndex, FIELD.MCH2);
     const priceSegment = val(row, colIndex, FIELD.PRICE_SEGMENT);
     const channel = val(row, colIndex, FIELD.CHANNEL);
@@ -1195,12 +1177,12 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
     if (!vendorName) vendorName = val(row, colIndex, FIELD.VENDOR);
 
     if (brand) { addYear(byBrand, brand, currentYear, netCur, qtyCur); addYear(byBrand, brand, priorYear, netPrior, qtyPrior); }
-    if (mch1) { addYear(byMch1, mch1, currentYear, netCur, qtyCur); addYear(byMch1, mch1, priorYear, netPrior, qtyPrior); }
+    if (productGroup) { addYear(byProductGroup, productGroup, currentYear, netCur, qtyCur); addYear(byProductGroup, productGroup, priorYear, netPrior, qtyPrior); }
     if (mch2) { addYear(byMch2, mch2, currentYear, netCur, qtyCur); addYear(byMch2, mch2, priorYear, netPrior, qtyPrior); }
     if (channel) { addYear(byChannel, channel, currentYear, netCur, qtyCur); addYear(byChannel, channel, priorYear, netPrior, qtyPrior); }
-    if (articleId && mch1) {
-      if (netCur > 0 || qtyCur > 0) addSku(skuSetsByMch1, mch1, currentYear, articleId);
-      if (netPrior > 0 || qtyPrior > 0) addSku(skuSetsByMch1, mch1, priorYear, articleId);
+    if (articleId && productGroup) {
+      if (netCur > 0 || qtyCur > 0) addSku(skuSetsByProductGroup, productGroup, currentYear, articleId);
+      if (netPrior > 0 || qtyPrior > 0) addSku(skuSetsByProductGroup, productGroup, priorYear, articleId);
     }
     if (articleId && channel) {
       if (netCur > 0 || qtyCur > 0) addSku(skuSetsByChannel, channel, currentYear, articleId);
@@ -1215,30 +1197,15 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
       }
     }
     if (articleId) {
-      if (!byArticle[articleId]) byArticle[articleId] = { name: articleName, brand, mch1, mc };
+      if (!byArticle[articleId]) byArticle[articleId] = { name: articleName, brand, productGroup, mc };
       addYear(byArticle, articleId, currentYear, netCur, qtyCur);
       addYear(byArticle, articleId, priorYear, netPrior, qtyPrior);
     }
   }
 
-  const productGroupTotals = {}, productGroupSkuSets = {};
-  for (const [mch1, v] of Object.entries(byMch1)) {
-    const g = groupFor(mch1);
-    if (!productGroupTotals[g]) productGroupTotals[g] = {};
-    if (!productGroupSkuSets[g]) productGroupSkuSets[g] = new Set();
-    const c = v[currentYear] || { netSales: 0, qty: 0 };
-    const p = v[priorYear] || { netSales: 0, qty: 0 };
-    if (!productGroupTotals[g][currentYear]) productGroupTotals[g][currentYear] = { netSales: 0, qty: 0 };
-    if (!productGroupTotals[g][priorYear]) productGroupTotals[g][priorYear] = { netSales: 0, qty: 0 };
-    productGroupTotals[g][currentYear].netSales += c.netSales; productGroupTotals[g][currentYear].qty += c.qty;
-    productGroupTotals[g][priorYear].netSales += p.netSales; productGroupTotals[g][priorYear].qty += p.qty;
-    if (skuSetsByMch1[mch1] && skuSetsByMch1[mch1][currentYear]) {
-      for (const id of skuSetsByMch1[mch1][currentYear]) productGroupSkuSets[g].add(id);
-    }
-  }
-  const productGroupTotalSku = Object.values(productGroupSkuSets).reduce((s, set) => s + set.size, 0);
-  const productGroup = mapWithGrowth(productGroupTotals, currentYear, priorYear).map((it) => {
-    const skuCount = productGroupSkuSets[it.k] ? productGroupSkuSets[it.k].size : 0;
+  const productGroupTotalSku = Object.keys(byProductGroup).reduce((s, k) => s + ((skuSetsByProductGroup[k] && skuSetsByProductGroup[k][currentYear]) ? skuSetsByProductGroup[k][currentYear].size : 0), 0);
+  const productGroup = mapWithGrowth(byProductGroup, currentYear, priorYear).map((it) => {
+    const skuCount = (skuSetsByProductGroup[it.k] && skuSetsByProductGroup[it.k][currentYear]) ? skuSetsByProductGroup[it.k][currentYear].size : 0;
     return { ...it, skuCount, skuShare: productGroupTotalSku ? skuCount / productGroupTotalSku : 0 };
   });
 
@@ -1259,7 +1226,7 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
 
   const allArticles = Object.entries(byArticle)
     .map(([id, v]) => ({
-      id, name: v.name, brand: v.brand, group: groupFor(v.mch1), mc: v.mc,
+      id, name: v.name, brand: v.brand, group: v.productGroup || 'Other', mc: v.mc,
       netSales2025: (v[priorYear] || { netSales: 0 }).netSales, netSales2026: (v[currentYear] || { netSales: 0 }).netSales,
       qty2025: (v[priorYear] || { qty: 0 }).qty, qty2026: (v[currentYear] || { qty: 0 }).qty,
     }))
@@ -1378,8 +1345,8 @@ async function loadAndRenderLive() {
     };
     const { trend, detail, allVendors } = await classifyWorksheets(dashboard.worksheets);
     if (!trend) throw new Error('Could not find the "Trend" worksheet — need a worksheet with "' + FIELD.OFFICE + '" and no "' + FIELD.ARTICLE_ID + '".');
-    if (!detail) throw new Error('Could not find the "Detail" worksheet — need a worksheet with "' + FIELD.ARTICLE_ID + '" and "' + FIELD.BRAND + '" (or "' + FIELD.MCH1 + '").');
-    if (!allVendors) throw new Error('Could not find the "AllVendors" worksheet — need a worksheet with "' + FIELD.ARTICLE_ID + '" and "' + FIELD.VENDOR + '" but no "' + FIELD.BRAND + '"/"' + FIELD.MCH1 + '".');
+    if (!detail) throw new Error('Could not find the "Detail" worksheet — need a worksheet with "' + FIELD.ARTICLE_ID + '" and "' + FIELD.BRAND + '" (or "' + FIELD.PRODUCT_GROUP + '").');
+    if (!allVendors) throw new Error('Could not find the "AllVendors" worksheet — need a worksheet with "' + FIELD.ARTICLE_ID + '" and "' + FIELD.VENDOR + '" but no "' + FIELD.BRAND + '"/"' + FIELD.PRODUCT_GROUP + '".');
     const trendPart = computeTrendPart(trend.rows, trend.colIndex, currentYear, priorYear);
     const detailPart = computeDetailPart(detail.rows, detail.colIndex, currentYear, priorYear);
     const allVendorsPart = computeAllVendorsPart(allVendors.rows, allVendors.colIndex, currentYear, priorYear, detailPart.vendorName);

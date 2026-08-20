@@ -84,7 +84,7 @@ Net Inc Tax, Sales Qty และ %Margin ทุกตัวต้อง split �
 |---|---|
 | `Article Id` | นับจำนวน SKU |
 | `Article Name Th` | ชื่อสินค้าในตาราง Top 10 |
-| `Mch1 Desc` | ใช้ regroup เป็น Product Group (Faucet/Shower/Accessories/Spare Parts) |
+| `Product Group` | Sales by Product Group (อ่านค่าจาก field จริงตรงๆ ไม่ได้ derive จาก Mch1 Desc แล้ว) |
 | `MCH2_Desc` | Sales by MCH2 (แสดงในการ์ด Vendor) |
 | `Mc Desc` | คอลัมน์ "MC Desc" ในตาราง Top 10 |
 | `Brand` | Sales by Brand |
