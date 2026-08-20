@@ -107,7 +107,8 @@
   }
   .brand h1 { font-size: 22px; margin: 0; letter-spacing: 0.02em; font-weight: 700; }
   .brand p { margin: 3px 0 0; font-size: 14px; color: rgba(255,255,255,0.72); }
-  .asof { font-size: 13.5px; color: rgba(255,255,255,0.65); text-align: right; white-space: nowrap; }
+  .page-footer { display: flex; justify-content: flex-end; padding: 10px 24px 0; }
+  .asof { font-size: 13px; color: var(--text-muted); text-align: right; white-space: nowrap; }
 
   .grid {
     display: grid;
@@ -132,6 +133,15 @@
   }
   .card p.sub { margin: 0 0 12px; font-size: 12.5px; color: var(--text-muted); }
   .card-row4 { padding-bottom: 38px; }
+
+  .card-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .card-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; flex: none; padding-top: 1px; }
+  .card-toggle-text { font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+  .card-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .card-toggle-track { position: relative; width: 32px; height: 18px; border-radius: 20px; background: var(--grid); transition: background 0.15s; flex: none; }
+  .card-toggle-track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.3); transition: transform 0.15s; }
+  .card-toggle input:checked + .card-toggle-track { background: var(--series-accent); }
+  .card-toggle input:checked + .card-toggle-track::after { transform: translateX(14px); }
 
   .col-2 { grid-column: span 2; }
   .col-3 { grid-column: span 3; }
@@ -259,7 +269,6 @@
         <p id="subtitle">Vendor Performance</p>
       </div>
     </div>
-    <div class="asof" id="asof">Data as of : —</div>
   </header>
 
   <div id="status-banner"></div>
@@ -279,6 +288,10 @@
 
     <div class="card col-12" id="table-hero"></div>
     <div class="card col-12" id="table-heroQty"></div>
+  </div>
+
+  <div class="page-footer">
+    <div class="asof" id="asof">Data as of : —</div>
   </div>
 </div>
 
@@ -579,9 +592,15 @@ function donutArcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
   ].join(' ');
 }
 function renderDonut(container, title, sub, items, colors, opts) {
-  opts = opts || {};
   const h = document.createElement('h3'); h.textContent = title; container.appendChild(h);
   const p = document.createElement('p'); p.className = 'sub'; p.textContent = sub; container.appendChild(p);
+  renderDonutBody(container, items, colors, opts);
+}
+// The chart+legend+detail-table body, without the title/subtitle — split out
+// so a card that needs a custom header (e.g. one with a field-switch toggle
+// next to the title) can build its own h3/p and still reuse this.
+function renderDonutBody(container, items, colors, opts) {
+  opts = opts || {};
 
   const total = items.reduce((s, it) => s + it.netSales, 0);
 
@@ -704,6 +723,43 @@ function renderDonut(container, title, sub, items, colors, opts) {
   container.appendChild(table);
 }
 
+/* ================= product group card (Product Group vs Product Group Mer toggle) ================= */
+function renderProductGroupCard(container, opts) {
+  const headerRow = document.createElement('div'); headerRow.className = 'card-header-row';
+  const titleWrap = document.createElement('div');
+  const h = document.createElement('h3');
+  const p = document.createElement('p'); p.className = 'sub';
+  titleWrap.appendChild(h); titleWrap.appendChild(p);
+  headerRow.appendChild(titleWrap);
+
+  const toggle = document.createElement('label'); toggle.className = 'card-toggle';
+  const toggleText = document.createElement('span'); toggleText.className = 'card-toggle-text'; toggleText.textContent = 'PRODUCT GROUP';
+  const toggleInput = document.createElement('input'); toggleInput.type = 'checkbox';
+  const toggleTrack = document.createElement('span'); toggleTrack.className = 'card-toggle-track';
+  toggle.appendChild(toggleText); toggle.appendChild(toggleInput); toggle.appendChild(toggleTrack);
+  headerRow.appendChild(toggle);
+  container.appendChild(headerRow);
+
+  const body = document.createElement('div');
+  container.appendChild(body);
+
+  function render() {
+    const usePlainGroup = toggleInput.checked;
+    const label = usePlainGroup ? 'Product Group' : 'Product Group Mer';
+    const items = usePlainGroup ? opts.productGroup : opts.productGroupMer;
+    h.textContent = 'Sales by ' + label;
+    p.textContent = 'Share of Net Sales ' + opts.yearCur;
+    body.innerHTML = '';
+    const total = items.reduce((s, it) => s + it.netSales, 0);
+    renderDonutBody(body, items, opts.colors, {
+      detailHeaders: [label, 'Net Sales', '%Share of Sales', '%Growth Sales', 'SKU Count', '%Share SKU'],
+      detailRows: items.filter((it) => (total ? it.netSales / total : 0) >= opts.minRowShare).map((it) => [it.k, fmtMoney(it.netSales), fmtShare(total ? it.netSales / total : 0, 0), growthCell(it.growth), fmtInt(it.skuCount), fmtShare(it.skuShare, 0)]),
+    });
+  }
+  toggleInput.addEventListener('change', render);
+  render();
+}
+
 /* ================= trend chart (current year vs prior year, monthly) ================= */
 function renderTrendChart(container, title, sub, months, seriesCur, seriesPrior, yearCur, yearPrior) {
   container.style.display = 'flex';
@@ -793,20 +849,32 @@ function renderTrendChart(container, title, sub, months, seriesCur, seriesPrior,
     svg.appendChild(txt);
   });
 
-  function lineFor(values) { return values.map((v, i) => [xFor(i), yFor(v)]).map((pt) => pt[0].toFixed(1) + ',' + pt[1].toFixed(1)).join(' L'); }
+  // Catmull-Rom-to-Bezier smoothing (tension 1/6) — curves through every data
+  // point rather than the straight-segment polyline this used to draw.
+  function smoothPathD(pts) {
+    if (pts.length < 3) return 'M' + pts.map((p) => p[0].toFixed(2) + ',' + p[1].toFixed(2)).join(' L');
+    let d = 'M' + pts[0][0].toFixed(2) + ',' + pts[0][1].toFixed(2);
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i === 0 ? i : i - 1], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2 < pts.length ? i + 2 : i + 1];
+      const cp1x = p1[0] + (p2[0] - p0[0]) / 6, cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const cp2x = p2[0] - (p3[0] - p1[0]) / 6, cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += ' C' + cp1x.toFixed(2) + ',' + cp1y.toFixed(2) + ' ' + cp2x.toFixed(2) + ',' + cp2y.toFixed(2) + ' ' + p2[0].toFixed(2) + ',' + p2[1].toFixed(2);
+    }
+    return d;
+  }
   function drawArea(values, fill) {
     const pts = values.map((v, i) => [xFor(i), yFor(v)]);
     const base = yFor(0);
-    const d = 'M' + lineFor(values) + ' L' + pts[pts.length-1][0].toFixed(1) + ',' + base + ' L' + pts[0][0].toFixed(1) + ',' + base + ' Z';
+    const d = smoothPathD(pts) + ' L' + pts[pts.length-1][0].toFixed(1) + ',' + base + ' L' + pts[0][0].toFixed(1) + ',' + base + ' Z';
     const area = document.createElementNS(svgNS, 'path'); area.setAttribute('d', d); area.setAttribute('fill', fill); area.setAttribute('stroke', 'none');
     svg.appendChild(area);
   }
   function drawLine(values, color) {
-    const path = document.createElementNS(svgNS, 'path'); path.setAttribute('d', 'M' + lineFor(values));
+    const pts = values.map((v, i) => [xFor(i), yFor(v)]);
+    const path = document.createElementNS(svgNS, 'path'); path.setAttribute('d', smoothPathD(pts));
     path.setAttribute('fill', 'none'); path.setAttribute('stroke', color); path.setAttribute('stroke-width', '2.5');
     path.setAttribute('stroke-linecap', 'round'); path.setAttribute('stroke-linejoin', 'round');
     svg.appendChild(path);
-    const pts = values.map((v, i) => [xFor(i), yFor(v)]);
     pts.forEach((pt) => {
       const dot = document.createElementNS(svgNS, 'circle');
       dot.setAttribute('cx', pt[0]); dot.setAttribute('cy', pt[1]); dot.setAttribute('r', 4);
@@ -968,10 +1036,9 @@ function renderDashboard(DATA) {
     detailRows: DATA.channel.filter((it) => it.netSales / (channelTotal || 1) >= MIN_ROW_SHARE).map((it) => [it.k, fmtMoney(it.netSales), fmtShare(it.netSales / (channelTotal || 1), 0), growthCell(it.growth), fmtInt(it.skuCount || 0), fmtShare(it.skuShare || 0, 0)]),
   }));
 
-  const productGroupTotal = DATA.productGroup.reduce((s, it) => s + it.netSales, 0);
-  clearAndRun('chart-productGroup', (el) => renderDonut(el, 'Sales by Product Group', 'Share of Net Sales ' + yearCur, DATA.productGroup, ['#2A9D8F', '#E9C46A', '#F4A261', '#E76F51'], {
-    detailHeaders: ['Product Group', 'Net Sales', '%Share of Sales', '%Growth Sales', 'SKU Count', '%Share SKU'],
-    detailRows: DATA.productGroup.filter((it) => it.netSales / (productGroupTotal || 1) >= MIN_ROW_SHARE).map((it) => [it.k, fmtMoney(it.netSales), fmtShare(it.netSales / (productGroupTotal || 1), 0), growthCell(it.growth), fmtInt(it.skuCount || 0), fmtShare(it.skuShare || 0, 0)]),
+  clearAndRun('chart-productGroup', (el) => renderProductGroupCard(el, {
+    yearCur, minRowShare: MIN_ROW_SHARE, colors: ['#2A9D8F', '#E9C46A', '#F4A261', '#E76F51'],
+    productGroup: DATA.productGroup, productGroupMer: DATA.productGroupMer,
   }));
 
   const priceSegmentTotal = DATA.priceSegment.reduce((s, it) => s + it.netSales, 0);
@@ -1008,6 +1075,7 @@ const FIELD = {
   ARTICLE_NAME: 'Article Name Th',
   MCH2: 'MCH2_Desc',
   PRODUCT_GROUP: 'Product Group',
+  PRODUCT_GROUP_MER: 'Product Group Mer',
   MC: 'Mc Desc',
   BRAND: 'Brand',
   VENDOR: 'Vendor Name',
@@ -1160,8 +1228,8 @@ function computeTrendPart(rows, colIndex, currentYear, priorYear) {
 }
 
 function computeDetailPart(rows, colIndex, currentYear, priorYear) {
-  const byBrand = {}, byProductGroup = {}, byMch2 = {}, byPriceSegment = {}, byChannel = {}, byArticle = {};
-  const skuSetsByPriceSegment = {}, skuSetsByProductGroup = {}, skuSetsByChannel = {};
+  const byBrand = {}, byProductGroup = {}, byProductGroupMer = {}, byMch2 = {}, byPriceSegment = {}, byChannel = {}, byArticle = {};
+  const skuSetsByPriceSegment = {}, skuSetsByProductGroup = {}, skuSetsByProductGroupMer = {}, skuSetsByChannel = {};
   let vendorName = null;
   for (const row of rows) {
     const netCur = Number(val(row, colIndex, FIELD.NET_SALES_CY)) || 0;
@@ -1171,6 +1239,7 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
     const articleId = val(row, colIndex, FIELD.ARTICLE_ID);
     const brand = val(row, colIndex, FIELD.BRAND);
     const productGroup = val(row, colIndex, FIELD.PRODUCT_GROUP);
+    const productGroupMer = val(row, colIndex, FIELD.PRODUCT_GROUP_MER);
     const mch2 = val(row, colIndex, FIELD.MCH2);
     const priceSegment = val(row, colIndex, FIELD.PRICE_SEGMENT);
     const channel = val(row, colIndex, FIELD.CHANNEL);
@@ -1180,11 +1249,16 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
 
     if (brand) { addYear(byBrand, brand, currentYear, netCur, qtyCur); addYear(byBrand, brand, priorYear, netPrior, qtyPrior); }
     if (productGroup) { addYear(byProductGroup, productGroup, currentYear, netCur, qtyCur); addYear(byProductGroup, productGroup, priorYear, netPrior, qtyPrior); }
+    if (productGroupMer) { addYear(byProductGroupMer, productGroupMer, currentYear, netCur, qtyCur); addYear(byProductGroupMer, productGroupMer, priorYear, netPrior, qtyPrior); }
     if (mch2) { addYear(byMch2, mch2, currentYear, netCur, qtyCur); addYear(byMch2, mch2, priorYear, netPrior, qtyPrior); }
     if (channel) { addYear(byChannel, channel, currentYear, netCur, qtyCur); addYear(byChannel, channel, priorYear, netPrior, qtyPrior); }
     if (articleId && productGroup) {
       if (netCur > 0 || qtyCur > 0) addSku(skuSetsByProductGroup, productGroup, currentYear, articleId);
       if (netPrior > 0 || qtyPrior > 0) addSku(skuSetsByProductGroup, productGroup, priorYear, articleId);
+    }
+    if (articleId && productGroupMer) {
+      if (netCur > 0 || qtyCur > 0) addSku(skuSetsByProductGroupMer, productGroupMer, currentYear, articleId);
+      if (netPrior > 0 || qtyPrior > 0) addSku(skuSetsByProductGroupMer, productGroupMer, priorYear, articleId);
     }
     if (articleId && channel) {
       if (netCur > 0 || qtyCur > 0) addSku(skuSetsByChannel, channel, currentYear, articleId);
@@ -1209,6 +1283,12 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
   const productGroup = mapWithGrowth(byProductGroup, currentYear, priorYear).map((it) => {
     const skuCount = (skuSetsByProductGroup[it.k] && skuSetsByProductGroup[it.k][currentYear]) ? skuSetsByProductGroup[it.k][currentYear].size : 0;
     return { ...it, skuCount, skuShare: productGroupTotalSku ? skuCount / productGroupTotalSku : 0 };
+  });
+
+  const productGroupMerTotalSku = Object.keys(byProductGroupMer).reduce((s, k) => s + ((skuSetsByProductGroupMer[k] && skuSetsByProductGroupMer[k][currentYear]) ? skuSetsByProductGroupMer[k][currentYear].size : 0), 0);
+  const productGroupMer = mapWithGrowth(byProductGroupMer, currentYear, priorYear).map((it) => {
+    const skuCount = (skuSetsByProductGroupMer[it.k] && skuSetsByProductGroupMer[it.k][currentYear]) ? skuSetsByProductGroupMer[it.k][currentYear].size : 0;
+    return { ...it, skuCount, skuShare: productGroupMerTotalSku ? skuCount / productGroupMerTotalSku : 0 };
   });
 
   const channelTotalSku = Object.keys(byChannel).reduce((s, k) => s + ((skuSetsByChannel[k] && skuSetsByChannel[k][currentYear]) ? skuSetsByChannel[k][currentYear].size : 0), 0);
@@ -1247,6 +1327,7 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
     vendorName,
     brands: mapWithGrowth(byBrand, currentYear, priorYear),
     productGroup,
+    productGroupMer,
     mch2: mapWithGrowth(byMch2, currentYear, priorYear),
     priceSegment,
     channel,
@@ -1312,7 +1393,7 @@ function computeDashboardData(trendPart, detailPart, allVendorsPart, currentYear
       activeBrand: detailPart.activeBrand, activeMch2: detailPart.activeMch2, share: allVendorsPart.pctOfTotal.v2026,
     },
     trend: trendPart.trend,
-    brands: detailPart.brands, productGroup: detailPart.productGroup, mch2: detailPart.mch2,
+    brands: detailPart.brands, productGroup: detailPart.productGroup, productGroupMer: detailPart.productGroupMer, mch2: detailPart.mch2,
     priceSegment: detailPart.priceSegment, office: trendPart.office, channel: detailPart.channel,
     heroProducts: detailPart.heroProducts,
     heroProductsByQty: detailPart.heroProductsByQty,
