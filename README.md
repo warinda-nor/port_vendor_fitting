@@ -65,7 +65,7 @@ Net Inc Tax, Sales Qty และ %Margin ทุกตัวต้อง split �
 | `Sales Qty - CY` / `Sales Qty - LY` | สูตรแบบเดียวกัน ใช้ `[Sale Qty]` |
 | `%Margin - CY` / `%Margin - LY` | สูตรแบบเดียวกัน ใช้ field margin ที่มี (ตัว extension เก็บ field นี้ไว้เผื่อใช้ แต่ยังไม่มี UI แสดงในรอบนี้) |
 
-**`Day Month`** — calculated field ใหม่ ใส่ใน worksheet "Trend" เท่านั้น เป็นวันที่แสดง format **`DD-MMM`** (เช่น `05-Jan`) ใช้เป็นแกนเวลาของกราฟ Trend (extension จะ group ให้เป็นรายเดือนเองจากส่วน MMM) — worksheet "Detail" กับ "AllVendors" **ไม่ต้องมี field วันที่เลย** เพราะ CY/LY คำนวณสำเร็จรูปมาในคอลัมน์แล้ว
+**`Day Month`** — calculated field ใหม่ ใส่ใน worksheet "Trend" เท่านั้น เป็นวันที่แสดง format **`DD-DATENAME('month')`** (เช่น `1-April`) ใช้เป็นแกนเวลาของกราฟ Trend (extension จะ group ให้เป็นรายเดือนเองจากชื่อเดือน) — worksheet "Detail" กับ "AllVendors" **ไม่ต้องมี field วันที่เลย** เพราะ CY/LY คำนวณสำเร็จรูปมาในคอลัมน์แล้ว
 
 ### สเปก field ที่แต่ละ Worksheet ต้องมี
 
@@ -73,7 +73,7 @@ Net Inc Tax, Sales Qty และ %Margin ทุกตัวต้อง split �
 
 | Field ใน Tableau | ใช้ทำอะไร |
 |---|---|
-| `Day Month` | แกนเวลาของกราฟ Trend (format `DD-MMM`) |
+| `Day Month` | แกนเวลาของกราฟ Trend (format `DD-DATENAME('month')` เช่น `1-April`) |
 | `Net Inc Tax - CY`, `Net Inc Tax - LY` | ยอดขาย (Net Sales) ปีปัจจุบัน/ปีก่อน |
 | `Sales Qty - CY`, `Sales Qty - LY` | จำนวนขาย ปีปัจจุบัน/ปีก่อน |
 | `Sls Ofc Desc` | Sales Office |

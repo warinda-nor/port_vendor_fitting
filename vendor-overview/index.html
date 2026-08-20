@@ -1027,12 +1027,13 @@ function unwrapCaption(name) {
   const m = /^[A-Za-z]+\((.+)\)$/.exec(name || '');
   return m ? m[1] : name;
 }
-// "Day Month" on the Trend worksheet is formatted "DD-MMM" (year stripped) so
-// the same calendar day aligns CY and LY into one row via the pre-split
-// "... - CY"/"... - LY" measure columns. The month is pulled out for the
-// chart's monthly rollup; day-of-month isn't needed once grouped.
+// "Day Month" on the Trend worksheet is formatted "D-Month" (e.g. "1-April",
+// year stripped) so the same calendar day aligns CY and LY into one row via
+// the pre-split "... - CY"/"... - LY" measure columns. The full month name is
+// pulled out for the chart's monthly rollup (and used as-is for its x-axis
+// label); day-of-month isn't needed once grouped.
 function monthFromDayMonth(dayMonth) {
-  const m = /-([A-Za-z]{3})\s*$/.exec(String(dayMonth || '').trim());
+  const m = /-([A-Za-z]+)\s*$/.exec(String(dayMonth || '').trim());
   return m ? m[1] : null;
 }
 function fmtDM(d) { return String(d.getDate()).padStart(2, '0') + ' ' + monthAbbr[d.getMonth() + 1]; }
@@ -1128,8 +1129,8 @@ function computeTrendPart(rows, colIndex, currentYear, priorYear) {
   }
   // Trust Tableau's own row order for the month sequence — "Day Month" is a
   // real date field with its year stripped for display, so rows still arrive
-  // sorted chronologically; re-deriving order from the MMM strings alone
-  // would misorder a range that crosses a year boundary (e.g. Nov–Feb).
+  // sorted chronologically; re-deriving order from the month-name strings
+  // alone would misorder a range that crosses a year boundary (e.g. Nov–Feb).
   const monthLabels = order;
   if (!monthLabels.length) {
     throw new Error('No rows found in the Trend worksheet with field "' + FIELD.DAY_MONTH + '". Actual fields on this worksheet: [' + Object.keys(colIndex).join(' | ') + ']');
