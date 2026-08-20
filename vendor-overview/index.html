@@ -1019,7 +1019,7 @@ function renderDashboard(DATA) {
  *                   a per-vendor-filtered worksheet alone can't answer that.
  */
 const FIELD = {
-  DATE: 'Time Date',
+  DAY_MONTH: 'Day Month',
   CHANNEL: 'Sls Grp Desc',
   OFFICE: 'Sls Ofc Desc',
   ARTICLE_ID: 'Article Id',
@@ -1030,40 +1030,30 @@ const FIELD = {
   BRAND: 'Brand',
   VENDOR: 'Vendor Name',
   PRICE_SEGMENT: 'Universe',
-  NET_SALES: 'Net Inc Tax',
-  QTY: 'Sale Qty',
-  MARGIN: '%Margin (no tax)',
+  NET_SALES_CY: 'Net Inc Tax - CY',
+  NET_SALES_LY: 'Net Inc Tax - LY',
+  QTY_CY: 'Sales Qty - CY',
+  QTY_LY: 'Sales Qty - LY',
+  MARGIN_CY: '%Margin - CY',
+  MARGIN_LY: '%Margin - LY',
 };
+const PARAM_START_DATE = 'Start Date';
+const PARAM_END_DATE = 'End Date';
 const monthAbbr = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function unwrapCaption(name) {
   const m = /^[A-Za-z]+\((.+)\)$/.exec(name || '');
   return m ? m[1] : name;
 }
-// Tableau's discrete "Month, Year" custom date part can surface as a small
-// internal integer via DataValue.value instead of a real timestamp — new
-// Date(2) resolves to Jan 1970, not the intended month. formattedValue
-// carries the human-readable string, which Date() parses correctly.
-function toYearMonth(dateVal, formattedValue) {
-  if (dateVal instanceof Date) return { y: dateVal.getFullYear(), m: dateVal.getMonth() + 1 };
-  if (formattedValue) {
-    const fd = new Date(formattedValue);
-    if (!Number.isNaN(fd.getTime())) return { y: fd.getFullYear(), m: fd.getMonth() + 1 };
-  }
-  const d = new Date(dateVal);
-  return { y: d.getFullYear(), m: d.getMonth() + 1 };
+// "Day Month" on the Trend worksheet is formatted "DD-MMM" (year stripped) so
+// the same calendar day aligns CY and LY into one row via the pre-split
+// "... - CY"/"... - LY" measure columns. The month is pulled out for the
+// chart's monthly rollup; day-of-month isn't needed once grouped.
+function monthFromDayMonth(dayMonth) {
+  const m = /-([A-Za-z]{3})\s*$/.exec(String(dayMonth || '').trim());
+  return m ? m[1] : null;
 }
-function extractYear(dateVal, formattedValue) {
-  if (dateVal instanceof Date) return dateVal.getFullYear();
-  const n = Number(dateVal);
-  if (!Number.isNaN(n) && n > 1900 && n < 3000) return n;
-  if (formattedValue) {
-    const fd = new Date(formattedValue);
-    if (!Number.isNaN(fd.getTime())) return fd.getFullYear();
-  }
-  const d = new Date(dateVal);
-  return Number.isNaN(d.getTime()) ? null : d.getFullYear();
-}
+function fmtDM(d) { return String(d.getDate()).padStart(2, '0') + ' ' + monthAbbr[d.getMonth() + 1]; }
 
 async function fetchWorksheetRows(worksheet) {
   const reader = await worksheet.getSummaryDataReaderAsync(undefined, { ignoreSelection: true });
@@ -1086,22 +1076,19 @@ function val(row, colIndex, field) {
   const dv = row[idx];
   return dv ? dv.value : undefined;
 }
-function formattedVal(row, colIndex, field) {
-  const idx = colIndex[field];
-  if (idx === undefined) return undefined;
-  const dv = row[idx];
-  return dv ? dv.formattedValue : undefined;
-}
-// A discrete custom date part's DataValue.value is often a small internal
-// ordinal (0, 1, 2, ...) rather than a real timestamp — the earliest period
-// in the data can legitimately be 0, so this must not be treated as falsy
-// the way a plain `if (!dateVal)` check would.
-function hasDate(dateVal) { return dateVal !== undefined && dateVal !== null; }
 function addYear(obj, key, year, netSales, qty) {
   if (!obj[key]) obj[key] = {};
   if (!obj[key][year]) obj[key][year] = { netSales: 0, qty: 0 };
   obj[key][year].netSales += netSales;
   obj[key][year].qty += qty;
+}
+function addSku(sets, key, year, articleId) {
+  if (!sets[key]) sets[key] = {};
+  if (!sets[key][year]) sets[key][year] = new Set();
+  sets[key][year].add(articleId);
+}
+function countActive(obj, year) {
+  return Object.keys(obj).filter((k) => { const v = obj[k][year]; return v && (v.netSales > 0 || v.qty > 0); }).length;
 }
 function mapWithGrowth(obj, currentYear, priorYear) {
   return Object.entries(obj).map(([k, v]) => {
@@ -1139,65 +1126,51 @@ async function classifyWorksheets(worksheets) {
   return result;
 }
 
-function computeTrendPart(rows, colIndex) {
-  const monthly = {}, totals = {}, byOffice = {};
-  let years = new Set();
+function computeTrendPart(rows, colIndex, currentYear, priorYear) {
+  const monthly = {}; const order = []; const byOffice = {};
+  const totals = { cur: { netSales: 0, qty: 0 }, prior: { netSales: 0, qty: 0 } };
   for (const row of rows) {
-    const dateVal = val(row, colIndex, FIELD.DATE);
-    if (!hasDate(dateVal)) continue;
-    const { y, m } = toYearMonth(dateVal, formattedVal(row, colIndex, FIELD.DATE));
-    const year = String(y);
-    years.add(year);
-    const netSales = Number(val(row, colIndex, FIELD.NET_SALES)) || 0;
-    const qty = Number(val(row, colIndex, FIELD.QTY)) || 0;
-    const monthKey = year + '-' + String(m).padStart(2, '0');
-    if (!monthly[monthKey]) monthly[monthKey] = { netSales: 0, qty: 0 };
-    monthly[monthKey].netSales += netSales; monthly[monthKey].qty += qty;
-    if (!totals[year]) totals[year] = { netSales: 0, qty: 0 };
-    totals[year].netSales += netSales; totals[year].qty += qty;
+    const month = monthFromDayMonth(val(row, colIndex, FIELD.DAY_MONTH));
+    if (!month) continue;
+    const netCur = Number(val(row, colIndex, FIELD.NET_SALES_CY)) || 0;
+    const netPrior = Number(val(row, colIndex, FIELD.NET_SALES_LY)) || 0;
+    const qtyCur = Number(val(row, colIndex, FIELD.QTY_CY)) || 0;
+    const qtyPrior = Number(val(row, colIndex, FIELD.QTY_LY)) || 0;
+    if (!monthly[month]) { monthly[month] = { netCur: 0, netPrior: 0, qtyCur: 0, qtyPrior: 0 }; order.push(month); }
+    monthly[month].netCur += netCur; monthly[month].netPrior += netPrior;
+    monthly[month].qtyCur += qtyCur; monthly[month].qtyPrior += qtyPrior;
+    totals.cur.netSales += netCur; totals.prior.netSales += netPrior;
+    totals.cur.qty += qtyCur; totals.prior.qty += qtyPrior;
     const office = val(row, colIndex, FIELD.OFFICE);
-    if (office) addYear(byOffice, office, year, netSales, qty);
+    if (office) { addYear(byOffice, office, currentYear, netCur, qtyCur); addYear(byOffice, office, priorYear, netPrior, qtyPrior); }
   }
-  const yearList = Array.from(years).sort();
-  if (!yearList.length) {
-    throw new Error('No dated rows found in the Trend worksheet. Diagnostic: rows=' + rows.length
-      + ', looking for field "' + FIELD.DATE + '", actual fields on this worksheet: [' + Object.keys(colIndex).join(' | ') + ']');
+  // Trust Tableau's own row order for the month sequence — "Day Month" is a
+  // real date field with its year stripped for display, so rows still arrive
+  // sorted chronologically; re-deriving order from the MMM strings alone
+  // would misorder a range that crosses a year boundary (e.g. Nov–Feb).
+  const monthLabels = order;
+  if (!monthLabels.length) {
+    throw new Error('No rows found in the Trend worksheet with field "' + FIELD.DAY_MONTH + '". Actual fields on this worksheet: [' + Object.keys(colIndex).join(' | ') + ']');
   }
-  const currentYear = yearList[yearList.length - 1];
-  const priorYear = String(Number(currentYear) - 1);
-  const monthsPresent = Array.from(new Set(Object.keys(monthly).filter((k) => k.startsWith(currentYear + '-')).map((k) => Number(k.slice(5))))).sort((a, b) => a - b);
-  function monthlyOf(year, m) { return monthly[year + '-' + String(m).padStart(2, '0')] || { netSales: 0, qty: 0 }; }
-  const cur = totals[currentYear] || { netSales: 0, qty: 0 };
-  const pri = totals[priorYear] || { netSales: 0, qty: 0 };
-  const maxDateKey = Object.keys(monthly).filter((k) => k.startsWith(currentYear + '-')).sort().slice(-1)[0];
-  const maxMonth = maxDateKey ? Number(maxDateKey.slice(5)) : monthsPresent[monthsPresent.length - 1];
-  const monthLabels = monthsPresent.map((m) => monthAbbr[m]);
-  const monthRangeLabel = monthLabels.length > 1 ? (monthLabels[0] + '–' + monthLabels[monthLabels.length - 1]) : monthLabels[0];
   return {
-    currentYear, priorYear,
-    meta: {
-      title: 'Vendor Business Review',
-      subtitle: monthRangeLabel + ' ' + currentYear + ' vs ' + monthRangeLabel + ' ' + priorYear,
-      asOf: monthAbbr[maxMonth] + ' ' + currentYear,
-    },
     kpiCore: {
       netSales: {
-        v2026: cur.netSales, v2025: pri.netSales,
-        sparklineCur: monthsPresent.map((m) => monthlyOf(currentYear, m).netSales),
-        sparklinePrior: monthsPresent.map((m) => monthlyOf(priorYear, m).netSales),
+        v2026: totals.cur.netSales, v2025: totals.prior.netSales,
+        sparklineCur: monthLabels.map((m) => monthly[m].netCur),
+        sparklinePrior: monthLabels.map((m) => monthly[m].netPrior),
       },
       qty: {
-        v2026: cur.qty, v2025: pri.qty,
-        sparklineCur: monthsPresent.map((m) => monthlyOf(currentYear, m).qty),
-        sparklinePrior: monthsPresent.map((m) => monthlyOf(priorYear, m).qty),
+        v2026: totals.cur.qty, v2025: totals.prior.qty,
+        sparklineCur: monthLabels.map((m) => monthly[m].qtyCur),
+        sparklinePrior: monthLabels.map((m) => monthly[m].qtyPrior),
       },
       aov: {
-        v2026: cur.qty ? cur.netSales / cur.qty : 0, v2025: pri.qty ? pri.netSales / pri.qty : 0,
-        sparklineCur: monthsPresent.map((m) => { const v = monthlyOf(currentYear, m); return v.qty ? v.netSales / v.qty : 0; }),
-        sparklinePrior: monthsPresent.map((m) => { const v = monthlyOf(priorYear, m); return v.qty ? v.netSales / v.qty : 0; }),
+        v2026: totals.cur.qty ? totals.cur.netSales / totals.cur.qty : 0, v2025: totals.prior.qty ? totals.prior.netSales / totals.prior.qty : 0,
+        sparklineCur: monthLabels.map((m) => { const v = monthly[m]; return v.qtyCur ? v.netCur / v.qtyCur : 0; }),
+        sparklinePrior: monthLabels.map((m) => { const v = monthly[m]; return v.qtyPrior ? v.netPrior / v.qtyPrior : 0; }),
       },
     },
-    trend: { months: monthLabels, cur: monthsPresent.map((m) => monthlyOf(currentYear, m).netSales), prior: monthsPresent.map((m) => monthlyOf(priorYear, m).netSales) },
+    trend: { months: monthLabels, cur: monthLabels.map((m) => monthly[m].netCur), prior: monthLabels.map((m) => monthly[m].netPrior) },
     office: mapWithGrowth(byOffice, currentYear, priorYear),
   };
 }
@@ -1207,13 +1180,10 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
   const skuSetsByPriceSegment = {}, skuSetsByMch1 = {}, skuSetsByChannel = {};
   let vendorName = null;
   for (const row of rows) {
-    const dateVal = val(row, colIndex, FIELD.DATE);
-    if (!hasDate(dateVal)) continue;
-    const y = extractYear(dateVal, formattedVal(row, colIndex, FIELD.DATE));
-    if (y === null) continue;
-    const year = String(y);
-    const netSales = Number(val(row, colIndex, FIELD.NET_SALES)) || 0;
-    const qty = Number(val(row, colIndex, FIELD.QTY)) || 0;
+    const netCur = Number(val(row, colIndex, FIELD.NET_SALES_CY)) || 0;
+    const netPrior = Number(val(row, colIndex, FIELD.NET_SALES_LY)) || 0;
+    const qtyCur = Number(val(row, colIndex, FIELD.QTY_CY)) || 0;
+    const qtyPrior = Number(val(row, colIndex, FIELD.QTY_LY)) || 0;
     const articleId = val(row, colIndex, FIELD.ARTICLE_ID);
     const brand = val(row, colIndex, FIELD.BRAND);
     const mch1 = val(row, colIndex, FIELD.MCH1);
@@ -1224,33 +1194,30 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
     const mc = val(row, colIndex, FIELD.MC);
     if (!vendorName) vendorName = val(row, colIndex, FIELD.VENDOR);
 
-    if (brand) addYear(byBrand, brand, year, netSales, qty);
-    if (mch1) addYear(byMch1, mch1, year, netSales, qty);
-    if (mch2) addYear(byMch2, mch2, year, netSales, qty);
-    if (channel) addYear(byChannel, channel, year, netSales, qty);
+    if (brand) { addYear(byBrand, brand, currentYear, netCur, qtyCur); addYear(byBrand, brand, priorYear, netPrior, qtyPrior); }
+    if (mch1) { addYear(byMch1, mch1, currentYear, netCur, qtyCur); addYear(byMch1, mch1, priorYear, netPrior, qtyPrior); }
+    if (mch2) { addYear(byMch2, mch2, currentYear, netCur, qtyCur); addYear(byMch2, mch2, priorYear, netPrior, qtyPrior); }
+    if (channel) { addYear(byChannel, channel, currentYear, netCur, qtyCur); addYear(byChannel, channel, priorYear, netPrior, qtyPrior); }
     if (articleId && mch1) {
-      if (!skuSetsByMch1[mch1]) skuSetsByMch1[mch1] = {};
-      if (!skuSetsByMch1[mch1][year]) skuSetsByMch1[mch1][year] = new Set();
-      skuSetsByMch1[mch1][year].add(articleId);
+      if (netCur > 0 || qtyCur > 0) addSku(skuSetsByMch1, mch1, currentYear, articleId);
+      if (netPrior > 0 || qtyPrior > 0) addSku(skuSetsByMch1, mch1, priorYear, articleId);
     }
     if (articleId && channel) {
-      if (!skuSetsByChannel[channel]) skuSetsByChannel[channel] = {};
-      if (!skuSetsByChannel[channel][year]) skuSetsByChannel[channel][year] = new Set();
-      skuSetsByChannel[channel][year].add(articleId);
+      if (netCur > 0 || qtyCur > 0) addSku(skuSetsByChannel, channel, currentYear, articleId);
+      if (netPrior > 0 || qtyPrior > 0) addSku(skuSetsByChannel, channel, priorYear, articleId);
     }
     if (priceSegment) {
-      addYear(byPriceSegment, priceSegment, year, netSales, qty);
+      addYear(byPriceSegment, priceSegment, currentYear, netCur, qtyCur);
+      addYear(byPriceSegment, priceSegment, priorYear, netPrior, qtyPrior);
       if (articleId) {
-        if (!skuSetsByPriceSegment[priceSegment]) skuSetsByPriceSegment[priceSegment] = {};
-        if (!skuSetsByPriceSegment[priceSegment][year]) skuSetsByPriceSegment[priceSegment][year] = new Set();
-        skuSetsByPriceSegment[priceSegment][year].add(articleId);
+        if (netCur > 0 || qtyCur > 0) addSku(skuSetsByPriceSegment, priceSegment, currentYear, articleId);
+        if (netPrior > 0 || qtyPrior > 0) addSku(skuSetsByPriceSegment, priceSegment, priorYear, articleId);
       }
     }
     if (articleId) {
       if (!byArticle[articleId]) byArticle[articleId] = { name: articleName, brand, mch1, mc };
-      if (!byArticle[articleId][year]) byArticle[articleId][year] = { netSales: 0, qty: 0 };
-      byArticle[articleId][year].netSales += netSales;
-      byArticle[articleId][year].qty += qty;
+      addYear(byArticle, articleId, currentYear, netCur, qtyCur);
+      addYear(byArticle, articleId, priorYear, netPrior, qtyPrior);
     }
   }
 
@@ -1309,9 +1276,13 @@ function computeDetailPart(rows, colIndex, currentYear, priorYear) {
     channel,
     heroProducts,
     heroProductsByQty,
-    skuCount: { v2026: Object.keys(byArticle).filter((id) => byArticle[id][currentYear]).length, v2025: Object.keys(byArticle).filter((id) => byArticle[id][priorYear]).length },
-    activeBrand: Object.keys(byBrand).filter((k) => byBrand[k][currentYear]).length,
-    activeMch2: Object.keys(byMch2).filter((k) => byMch2[k][currentYear]).length,
+    // Every article/brand/mch2 now gets a [currentYear]/[priorYear] entry on
+    // every Detail row regardless of whether that side's CY/LY column is
+    // actually zero (one row already carries both), so "active" must check
+    // the value, not just key presence.
+    skuCount: { v2026: countActive(byArticle, currentYear), v2025: countActive(byArticle, priorYear) },
+    activeBrand: countActive(byBrand, currentYear),
+    activeMch2: countActive(byMch2, currentYear),
   };
 }
 
@@ -1319,21 +1290,18 @@ function computeAllVendorsPart(rows, colIndex, currentYear, priorYear, thisVendo
   const byVendor = {};
   const skuSetsByVendor = {};
   for (const row of rows) {
-    const dateVal = val(row, colIndex, FIELD.DATE);
-    if (!hasDate(dateVal)) continue;
-    const y = extractYear(dateVal, formattedVal(row, colIndex, FIELD.DATE));
-    if (y === null) continue;
-    const year = String(y);
     const vendor = val(row, colIndex, FIELD.VENDOR);
     if (!vendor) continue;
-    const netSales = Number(val(row, colIndex, FIELD.NET_SALES)) || 0;
-    const qty = Number(val(row, colIndex, FIELD.QTY)) || 0;
-    addYear(byVendor, vendor, year, netSales, qty);
+    const netCur = Number(val(row, colIndex, FIELD.NET_SALES_CY)) || 0;
+    const netPrior = Number(val(row, colIndex, FIELD.NET_SALES_LY)) || 0;
+    const qtyCur = Number(val(row, colIndex, FIELD.QTY_CY)) || 0;
+    const qtyPrior = Number(val(row, colIndex, FIELD.QTY_LY)) || 0;
+    addYear(byVendor, vendor, currentYear, netCur, qtyCur);
+    addYear(byVendor, vendor, priorYear, netPrior, qtyPrior);
     const articleId = val(row, colIndex, FIELD.ARTICLE_ID);
     if (articleId) {
-      if (!skuSetsByVendor[vendor]) skuSetsByVendor[vendor] = {};
-      if (!skuSetsByVendor[vendor][year]) skuSetsByVendor[vendor][year] = new Set();
-      skuSetsByVendor[vendor][year].add(articleId);
+      if (netCur > 0 || qtyCur > 0) addSku(skuSetsByVendor, vendor, currentYear, articleId);
+      if (netPrior > 0 || qtyPrior > 0) addSku(skuSetsByVendor, vendor, priorYear, articleId);
     }
   }
   const activeVendors = Object.keys(byVendor).filter((k) => byVendor[k][currentYear] && byVendor[k][currentYear].netSales > 0);
@@ -1354,11 +1322,11 @@ function computeAllVendorsPart(rows, colIndex, currentYear, priorYear, thisVendo
   };
 }
 
-function computeDashboardData(trendPart, detailPart, allVendorsPart) {
+function computeDashboardData(trendPart, detailPart, allVendorsPart, currentYear, priorYear, meta) {
   return {
     vendorName: detailPart.vendorName || '—',
-    currentYear: trendPart.currentYear, priorYear: trendPart.priorYear,
-    meta: trendPart.meta,
+    currentYear, priorYear,
+    meta,
     kpi: {
       netSales: trendPart.kpiCore.netSales, qty: trendPart.kpiCore.qty, aov: trendPart.kpiCore.aov,
       sku: detailPart.skuCount, pctOfTotal: allVendorsPart.pctOfTotal,
@@ -1382,17 +1350,40 @@ function showStatus(message, isError) {
   banner.style.display = message ? 'block' : 'none';
 }
 
+// Start Date / End Date live as Tableau Parameters, not worksheet columns —
+// read directly via the Parameters API rather than expecting them as a field
+// on any worksheet's data.
+async function getDateRangeParams(dashboard) {
+  const params = await dashboard.getParametersAsync();
+  const startParam = params.find((p) => p.name === PARAM_START_DATE);
+  const endParam = params.find((p) => p.name === PARAM_END_DATE);
+  if (!startParam || !endParam) {
+    throw new Error('Could not find Parameter "' + PARAM_START_DATE + '" or "' + PARAM_END_DATE + '" on the dashboard. Found parameters: [' + params.map((p) => p.name).join(' | ') + ']');
+  }
+  return { startDate: new Date(startParam.currentValue.value), endDate: new Date(endParam.currentValue.value), startParam, endParam };
+}
+
 async function loadAndRenderLive() {
   try {
     showStatus('Loading data from Tableau…', false);
-    const { trend, detail, allVendors } = await classifyWorksheets(tableau.extensions.dashboardContent.dashboard.worksheets);
+    const dashboard = tableau.extensions.dashboardContent.dashboard;
+    const { startDate, endDate } = await getDateRangeParams(dashboard);
+    const currentYear = String(endDate.getFullYear());
+    const priorYear = String(Number(currentYear) - 1);
+    const rangeLabel = fmtDM(startDate) + '–' + fmtDM(endDate);
+    const meta = {
+      title: 'Vendor Business Review',
+      subtitle: rangeLabel + ' ' + currentYear + ' vs ' + rangeLabel + ' ' + priorYear,
+      asOf: fmtDM(endDate) + ' ' + currentYear,
+    };
+    const { trend, detail, allVendors } = await classifyWorksheets(dashboard.worksheets);
     if (!trend) throw new Error('Could not find the "Trend" worksheet — need a worksheet with "' + FIELD.OFFICE + '" and no "' + FIELD.ARTICLE_ID + '".');
     if (!detail) throw new Error('Could not find the "Detail" worksheet — need a worksheet with "' + FIELD.ARTICLE_ID + '" and "' + FIELD.BRAND + '" (or "' + FIELD.MCH1 + '").');
     if (!allVendors) throw new Error('Could not find the "AllVendors" worksheet — need a worksheet with "' + FIELD.ARTICLE_ID + '" and "' + FIELD.VENDOR + '" but no "' + FIELD.BRAND + '"/"' + FIELD.MCH1 + '".');
-    const trendPart = computeTrendPart(trend.rows, trend.colIndex);
-    const detailPart = computeDetailPart(detail.rows, detail.colIndex, trendPart.currentYear, trendPart.priorYear);
-    const allVendorsPart = computeAllVendorsPart(allVendors.rows, allVendors.colIndex, trendPart.currentYear, trendPart.priorYear, detailPart.vendorName);
-    renderDashboard(computeDashboardData(trendPart, detailPart, allVendorsPart));
+    const trendPart = computeTrendPart(trend.rows, trend.colIndex, currentYear, priorYear);
+    const detailPart = computeDetailPart(detail.rows, detail.colIndex, currentYear, priorYear);
+    const allVendorsPart = computeAllVendorsPart(allVendors.rows, allVendors.colIndex, currentYear, priorYear, detailPart.vendorName);
+    renderDashboard(computeDashboardData(trendPart, detailPart, allVendorsPart, currentYear, priorYear, meta));
     showStatus('', false);
   } catch (err) {
     console.error(err);
@@ -1415,6 +1406,9 @@ document.addEventListener('DOMContentLoaded', function () {
     dashboard.worksheets.forEach((ws) => {
       ws.addEventListener(tableau.TableauEventType.FilterChanged, loadAndRenderLive);
       ws.addEventListener(tableau.TableauEventType.SummaryDataChanged, loadAndRenderLive);
+    });
+    dashboard.getParametersAsync().then((params) => {
+      params.forEach((p) => p.addEventListener(tableau.TableauEventType.ParameterChanged, loadAndRenderLive));
     });
     loadAndRenderLive();
   }, function (err) {

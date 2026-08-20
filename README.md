@@ -50,25 +50,38 @@ Dashboard Vendor Fitting.png     ภาพ mockup อ้างอิงสำห
 2. ลาก object **Extension** จากแผง Objects มาวางในตำแหน่งที่ต้องการ
 3. เลือก **My Extensions → Access Local Extensions** แล้วเลือกไฟล์ `vendor-overview/VendorOverview.trex`
    (หรือถ้า deploy ผ่าน GitHub Pages แล้ว จะสามารถแชร์ไฟล์ `.trex` นี้ให้คนอื่นใช้ได้เลยโดยไม่ต้องมีไฟล์ index.html อยู่ในเครื่อง เพราะ extension จะไปโหลดจาก URL บน GitHub Pages โดยตรง)
-4. Dashboard ต้องมี Worksheet ทั้งหมด **3 ตัว** ตามสเปกด้านล่าง — **ตั้งชื่อ Worksheet เป็นอะไรก็ได้ตามใจ** (เช่น "Control", "Sheet 1" ก็ได้) เพราะ extension จะดูจาก **field ที่มีอยู่ใน worksheet นั้นๆ** ไม่ได้ดูจากชื่อ — สำคัญคือ field ต้องครบตามสเปกของแต่ละ worksheet ด้านล่าง จะมี worksheet อื่นอยู่ในดาชบอร์ดเพิ่มเติม (เช่น sheet ไว้ทำ filter action) ก็ไม่กระทบ extension จะข้ามไปเอง
-5. ใส่ Quick Filter สำหรับ field **Vendor Name** ไว้บน Dashboard (ตัวกรอง Vendor ต้องกรองแค่ worksheet "Trend" และ "Detail" เท่านั้น — **ห้ามกรอง** worksheet "AllVendors" เพราะต้องใช้ข้อมูลของ vendor ทุกรายเพื่อคำนวณ Rank/Share)
+4. Dashboard ต้องมี **Parameter 2 ตัว** ชื่อ **`Start Date`** และ **`End Date`** (type: Date) วางเป็นตัวควบคุมช่วงวันที่บน Dashboard แทนการใช้ Filter รายเดือนแบบเดิม — extension จะอ่านค่าทั้งสองนี้ผ่าน Tableau Parameters API ตรงๆ (ไม่ได้อ่านจาก field ใน worksheet) เพื่อเอาไปคำนวณปี CY/LY และ label ของช่วงวันที่ที่แสดงบนหน้าจอ
+5. Dashboard ต้องมี Worksheet ทั้งหมด **3 ตัว** ตามสเปกด้านล่าง — **ตั้งชื่อ Worksheet เป็นอะไรก็ได้ตามใจ** เพราะ extension จะดูจาก **field ที่มีอยู่ใน worksheet นั้นๆ** ไม่ได้ดูจากชื่อ — สำคัญคือ field ต้องครบตามสเปกของแต่ละ worksheet ด้านล่าง จะมี worksheet อื่นอยู่ในดาชบอร์ดเพิ่มเติม (เช่น sheet ไว้ทำ filter action) ก็ไม่กระทบ extension จะข้ามไปเอง
+6. ใส่ Quick Filter สำหรับ field **Vendor Name** ไว้บน Dashboard (ตัวกรอง Vendor ต้องกรองแค่ worksheet "Trend" และ "Detail" เท่านั้น — **ห้ามกรอง** worksheet "AllVendors" เพราะต้องใช้ข้อมูลของ vendor ทุกรายเพื่อคำนวณ Rank/Share)
+
+### Calculated Field ที่ต้องสร้างใน Tableau (CY/LY คำนวณสำเร็จรูปมาให้ extension เลย)
+
+Net Inc Tax, Sales Qty และ %Margin ทุกตัวต้อง split เป็นคอลัมน์ CY (Current Year ตาม `Start Date`–`End Date`) กับ LY (ช่วงเดียวกันย้อนไป 1 ปี) แยกกัน แล้ว extension จะ sum แต่ละคอลัมน์ตรงๆ ไม่มีการคำนวณปีเองอีกต่อไป ต้องสร้าง field ชื่อตรงตัวดังนี้:
+
+| Field ที่ต้องสร้าง | แนวคิดสูตร (ตัวอย่าง) |
+|---|---|
+| `Net Inc Tax - CY` | `IF [Time Date] >= [Start Date] AND [Time Date] <= [End Date] THEN [Net Inc Tax] END` |
+| `Net Inc Tax - LY` | เหมือนกันแต่ใช้ `DATEADD('year', -1, [Start Date])` / `DATEADD('year', -1, [End Date])` |
+| `Sales Qty - CY` / `Sales Qty - LY` | สูตรแบบเดียวกัน ใช้ `[Sale Qty]` |
+| `%Margin - CY` / `%Margin - LY` | สูตรแบบเดียวกัน ใช้ field margin ที่มี (ตัว extension เก็บ field นี้ไว้เผื่อใช้ แต่ยังไม่มี UI แสดงในรอบนี้) |
+
+**`Day Month`** — calculated field ใหม่ ใส่ใน worksheet "Trend" เท่านั้น เป็นวันที่แสดง format **`DD-MMM`** (เช่น `05-Jan`) ใช้เป็นแกนเวลาของกราฟ Trend (extension จะ group ให้เป็นรายเดือนเองจากส่วน MMM) — worksheet "Detail" กับ "AllVendors" **ไม่ต้องมี field วันที่เลย** เพราะ CY/LY คำนวณสำเร็จรูปมาในคอลัมน์แล้ว
 
 ### สเปก field ที่แต่ละ Worksheet ต้องมี
 
-**Worksheet "Trend"** — grain รายเดือน, กรองเหลือ Vendor เดียว (ไม่ต้องมี Article Id)
+**Worksheet "Trend"** — grain รายวัน, กรองเหลือ Vendor เดียว (ไม่ต้องมี Article Id)
 
 | Field ใน Tableau | ใช้ทำอะไร |
 |---|---|
-| `Month, Year of Time Date` | แกนเวลาของกราฟ Trend |
-| `Net Inc Tax` | ยอดขาย (Net Sales) |
-| `Sale Qty` | จำนวนขาย |
+| `Day Month` | แกนเวลาของกราฟ Trend (format `DD-MMM`) |
+| `Net Inc Tax - CY`, `Net Inc Tax - LY` | ยอดขาย (Net Sales) ปีปัจจุบัน/ปีก่อน |
+| `Sales Qty - CY`, `Sales Qty - LY` | จำนวนขาย ปีปัจจุบัน/ปีก่อน |
 | `Sls Ofc Desc` | Sales Office |
 
-**Worksheet "Detail"** — grain รายปี, กรองเหลือ Vendor เดียว, ต้องมี Article Id
+**Worksheet "Detail"** — grain รายปี (ต่อ Article), กรองเหลือ Vendor เดียว, ต้องมี Article Id — **ไม่ต้องมี field วันที่**
 
 | Field ใน Tableau | ใช้ทำอะไร |
 |---|---|
-| `Month, Year of Time Date` | ใช้แยกปีปัจจุบัน/ปีก่อน |
 | `Article Id` | นับจำนวน SKU |
 | `Article Name Th` | ชื่อสินค้าในตาราง Top 10 |
 | `Mch1 Desc` | ใช้ regroup เป็น Product Group (Faucet/Shower/Accessories/Spare Parts) |
@@ -78,23 +91,24 @@ Dashboard Vendor Fitting.png     ภาพ mockup อ้างอิงสำห
 | `Vendor Name` | ใช้แสดงชื่อ vendor ที่กำลังดู |
 | `Universe` | Sales by Price Segment |
 | `Sls Grp Desc` | Sales by Channel |
-| `Net Inc Tax`, `Sale Qty` | ยอดขาย/จำนวนขาย |
+| `Net Inc Tax - CY`, `Net Inc Tax - LY` | ยอดขาย ปีปัจจุบัน/ปีก่อน |
+| `Sales Qty - CY`, `Sales Qty - LY` | จำนวนขาย ปีปัจจุบัน/ปีก่อน |
 
-**Worksheet "AllVendors"** — grain รายปี, **ไม่กรอง** Vendor (ต้องเห็นทุก vendor)
+**Worksheet "AllVendors"** — grain รายปี (ต่อ Vendor+Article), **ไม่กรอง** Vendor (ต้องเห็นทุก vendor) — **ไม่ต้องมี field วันที่**
 
 | Field ใน Tableau | ใช้ทำอะไร |
 |---|---|
-| `Month, Year of Time Date` | ใช้แยกปีปัจจุบัน/ปีก่อน |
 | `Vendor Name` | คำนวณ Rank/Share ของ vendor ที่เลือก เทียบทุก vendor |
 | `Article Id` | นับ SKU ของแต่ละ vendor เพื่อจัด Rank (SKU) |
-| `Net Inc Tax`, `Sale Qty` | ยอดขาย/จำนวนขาย ของทุก vendor |
+| `Net Inc Tax - CY`, `Net Inc Tax - LY` | ยอดขาย ปีปัจจุบัน/ปีก่อน ของทุก vendor |
+| `Sales Qty - CY`, `Sales Qty - LY` | จำนวนขาย ปีปัจจุบัน/ปีก่อน ของทุก vendor |
 
-> ชื่อ field ต้องตรงกับในตาราง **เป๊ะๆ** (ตรงตามที่ประกาศไว้ในตัวแปร `FIELD` ท้ายไฟล์ `index.html`) ถ้าใน data source ใช้ชื่อคอลัมน์ต่างจากนี้ ให้แก้ค่าในตัวแปร `FIELD` ให้ตรงกับ data source จริง
+> ชื่อ field และชื่อ Parameter ต้องตรงกับในตาราง **เป๊ะๆ** (ตรงตามที่ประกาศไว้ในตัวแปร `FIELD`/`PARAM_START_DATE`/`PARAM_END_DATE` ท้ายไฟล์ `index.html`) ถ้าใน data source ใช้ชื่อคอลัมน์ต่างจากนี้ ให้แก้ค่าในตัวแปรเหล่านั้นให้ตรงกับ data source จริง
 
 ---
 
 ## ข้อจำกัดที่ควรรู้
 
-- ช่วงเดือนที่แสดง (เช่น "Jan–Mar") คำนวณจากข้อมูลจริงที่มีใน worksheet "Trend" ของ Tableau ตอนนั้นโดยอัตโนมัติ ไม่ได้ fix ไว้ตายตัว
+- ช่วงวันที่ที่แสดง (เช่น "05 Jan–20 Jun") มาจากค่า Parameter `Start Date`/`End Date` ที่เลือกบน Dashboard ตรงๆ ไม่ได้อนุมานจากข้อมูล — กราฟ Trend เองยัง group แสดงผลเป็นรายเดือนเสมอ (roll up จาก `Day Month`) แม้ Parameter จะเลือกวันแบบไม่เต็มเดือนก็ตาม
 - ข้อมูลต้นทาง (`data form ds new.xlsx`) ไม่มีฟิลด์ "สี" (Col Name) จึงไม่มีการ์ด "Sales by Color Group" ใน dashboard นี้
 - ทุกครั้งที่แก้ `vendor-overview/index.html` แล้ว push ขึ้น GitHub ต้องรอ GitHub Pages build ใหม่ (ปกติ 1–2 นาที) ก่อนที่ Tableau จะเห็นเวอร์ชันล่าสุด — ถ้าไม่เห็นการเปลี่ยนแปลง ให้ลอง hard refresh หรือปิด-เปิด dashboard ใหม่
