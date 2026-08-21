@@ -2,3 +2,8 @@
 # not needed to serve the extension via GitHub Pages. Keep these local only.
 *.xlsx
 ~$*.xlsx
+
+# Local layout preview — bakes in real sales figures computed from a sample
+# workbook (same sensitivity as the .xlsx files above), for eyeballing layout
+# changes before touching the real (data-free) index.html. Local only.
+vendor-overview/preview.html

@@ -86,7 +86,7 @@ Net Inc Tax, Sales Qty และ %Margin ทุกตัวต้อง split �
 | `Article Name Th` | ชื่อสินค้าในตาราง Top 10 |
 | `Product Group` | Sales by Product Group (อ่านค่าจาก field จริงตรงๆ ไม่ได้ derive จาก Mch1 Desc แล้ว) |
 | `Product Group Mer` | อีก breakdown หนึ่งของ Product Group — สลับดูได้ผ่าน Toggle บนการ์ดเดียวกัน (ค่า default ตอนเปิดการ์ดคือ Product Group Mer) |
-| `MCH2_Desc` | Sales by MCH2 (แสดงในการ์ด Vendor) |
+| `Mch2 Desc` | Sales by MCH2 (แสดงในการ์ด Vendor) |
 | `Mc Desc` | คอลัมน์ "MC Desc" ในตาราง Top 10 |
 | `Brand` | Sales by Brand |
 | `Vendor Name` | ใช้แสดงชื่อ vendor ที่กำลังดู |

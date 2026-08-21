@@ -1073,7 +1073,7 @@ const FIELD = {
   OFFICE: 'Sls Ofc Desc',
   ARTICLE_ID: 'Article Id',
   ARTICLE_NAME: 'Article Name Th',
-  MCH2: 'MCH2_Desc',
+  MCH2: 'Mch2 Desc',
   PRODUCT_GROUP: 'Product Group',
   PRODUCT_GROUP_MER: 'Product Group Mer',
   MC: 'Mc Desc',
@@ -1091,6 +1091,7 @@ const PARAM_START_DATE = 'Start Date';
 const PARAM_END_DATE = 'End Date';
 const UNIVERSE_ORDER = ['ECO', 'MASS', 'PREMIUM', 'LUXURY'];
 const monthAbbr = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAME_FULL = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 function unwrapCaption(name) {
   const m = /^[A-Za-z]+\((.+)\)$/.exec(name || '');
@@ -1178,8 +1179,8 @@ async function classifyWorksheets(worksheets) {
   return result;
 }
 
-function computeTrendPart(rows, colIndex, currentYear, priorYear) {
-  const monthly = {}; const order = []; const byOffice = {};
+function computeTrendPart(rows, colIndex, currentYear, priorYear, startDate, endDate) {
+  const monthly = {}; const byOffice = {};
   const totals = { cur: { netSales: 0, qty: 0 }, prior: { netSales: 0, qty: 0 } };
   for (const row of rows) {
     const month = monthFromDayMonth(val(row, colIndex, FIELD.DAY_MONTH));
@@ -1188,7 +1189,7 @@ function computeTrendPart(rows, colIndex, currentYear, priorYear) {
     const netPrior = Number(val(row, colIndex, FIELD.NET_SALES_LY)) || 0;
     const qtyCur = Number(val(row, colIndex, FIELD.QTY_CY)) || 0;
     const qtyPrior = Number(val(row, colIndex, FIELD.QTY_LY)) || 0;
-    if (!monthly[month]) { monthly[month] = { netCur: 0, netPrior: 0, qtyCur: 0, qtyPrior: 0 }; order.push(month); }
+    if (!monthly[month]) monthly[month] = { netCur: 0, netPrior: 0, qtyCur: 0, qtyPrior: 0 };
     monthly[month].netCur += netCur; monthly[month].netPrior += netPrior;
     monthly[month].qtyCur += qtyCur; monthly[month].qtyPrior += qtyPrior;
     totals.cur.netSales += netCur; totals.prior.netSales += netPrior;
@@ -1196,33 +1197,41 @@ function computeTrendPart(rows, colIndex, currentYear, priorYear) {
     const office = val(row, colIndex, FIELD.OFFICE);
     if (office) { addYear(byOffice, office, currentYear, netCur, qtyCur); addYear(byOffice, office, priorYear, netPrior, qtyPrior); }
   }
-  // Trust Tableau's own row order for the month sequence — "Day Month" is a
-  // real date field with its year stripped for display, so rows still arrive
-  // sorted chronologically; re-deriving order from the month-name strings
-  // alone would misorder a range that crosses a year boundary (e.g. Nov–Feb).
-  const monthLabels = order;
-  if (!monthLabels.length) {
-    throw new Error('No rows found in the Trend worksheet with field "' + FIELD.DAY_MONTH + '". Actual fields on this worksheet: [' + Object.keys(colIndex).join(' | ') + ']');
+  // Canonical chronological month sequence built from Start/End Date, not
+  // from row order — a raw data export has no guaranteed sort, and the
+  // month-name strings alone can't be ordered correctly across a year
+  // boundary (e.g. Nov->Feb) without an actual calendar anchor.
+  const monthLabels = [];
+  const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+  const stop = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+  while (cursor <= stop) {
+    monthLabels.push(MONTH_NAME_FULL[cursor.getMonth() + 1]);
+    cursor.setMonth(cursor.getMonth() + 1);
   }
+  if (!monthLabels.length) {
+    throw new Error('Start Date is after End Date — no months to show.');
+  }
+  const emptyBucket = { netCur: 0, netPrior: 0, qtyCur: 0, qtyPrior: 0 };
+  const bucketOf = (m) => monthly[m] || emptyBucket;
   return {
     kpiCore: {
       netSales: {
         v2026: totals.cur.netSales, v2025: totals.prior.netSales,
-        sparklineCur: monthLabels.map((m) => monthly[m].netCur),
-        sparklinePrior: monthLabels.map((m) => monthly[m].netPrior),
+        sparklineCur: monthLabels.map((m) => bucketOf(m).netCur),
+        sparklinePrior: monthLabels.map((m) => bucketOf(m).netPrior),
       },
       qty: {
         v2026: totals.cur.qty, v2025: totals.prior.qty,
-        sparklineCur: monthLabels.map((m) => monthly[m].qtyCur),
-        sparklinePrior: monthLabels.map((m) => monthly[m].qtyPrior),
+        sparklineCur: monthLabels.map((m) => bucketOf(m).qtyCur),
+        sparklinePrior: monthLabels.map((m) => bucketOf(m).qtyPrior),
       },
       aov: {
         v2026: totals.cur.qty ? totals.cur.netSales / totals.cur.qty : 0, v2025: totals.prior.qty ? totals.prior.netSales / totals.prior.qty : 0,
-        sparklineCur: monthLabels.map((m) => { const v = monthly[m]; return v.qtyCur ? v.netCur / v.qtyCur : 0; }),
-        sparklinePrior: monthLabels.map((m) => { const v = monthly[m]; return v.qtyPrior ? v.netPrior / v.qtyPrior : 0; }),
+        sparklineCur: monthLabels.map((m) => { const v = bucketOf(m); return v.qtyCur ? v.netCur / v.qtyCur : 0; }),
+        sparklinePrior: monthLabels.map((m) => { const v = bucketOf(m); return v.qtyPrior ? v.netPrior / v.qtyPrior : 0; }),
       },
     },
-    trend: { months: monthLabels, cur: monthLabels.map((m) => monthly[m].netCur), prior: monthLabels.map((m) => monthly[m].netPrior) },
+    trend: { months: monthLabels, cur: monthLabels.map((m) => bucketOf(m).netCur), prior: monthLabels.map((m) => bucketOf(m).netPrior) },
     office: mapWithGrowth(byOffice, currentYear, priorYear),
   };
 }
@@ -1437,7 +1446,7 @@ async function loadAndRenderLive() {
     if (!trend) throw new Error('Could not find the "Trend" worksheet — need a worksheet with "' + FIELD.OFFICE + '" and no "' + FIELD.ARTICLE_ID + '".');
     if (!detail) throw new Error('Could not find the "Detail" worksheet — need a worksheet with "' + FIELD.ARTICLE_ID + '" and "' + FIELD.BRAND + '" (or "' + FIELD.PRODUCT_GROUP + '").');
     if (!allVendors) throw new Error('Could not find the "AllVendors" worksheet — need a worksheet with "' + FIELD.ARTICLE_ID + '" and "' + FIELD.VENDOR + '" but no "' + FIELD.BRAND + '"/"' + FIELD.PRODUCT_GROUP + '".');
-    const trendPart = computeTrendPart(trend.rows, trend.colIndex, currentYear, priorYear);
+    const trendPart = computeTrendPart(trend.rows, trend.colIndex, currentYear, priorYear, startDate, endDate);
     const detailPart = computeDetailPart(detail.rows, detail.colIndex, currentYear, priorYear);
     const allVendorsPart = computeAllVendorsPart(allVendors.rows, allVendors.colIndex, currentYear, priorYear, detailPart.vendorName);
     renderDashboard(computeDashboardData(trendPart, detailPart, allVendorsPart, currentYear, priorYear, meta));
