@@ -712,7 +712,7 @@ function renderDonutBody(container, items, colors, opts) {
       // extreme cases, which is the accepted trade-off.
       if (rightSide) labelX = Math.max(elbow[0], Math.min(labelX, vw - LABEL_SAFE_MARGIN - line1Width));
       else labelX = Math.min(elbow[0], Math.max(labelX, LABEL_SAFE_MARGIN + line1Width));
-      return { it, share, outer, elbowX: elbow[0], elbowTrueY: elbow[1], y: elbow[1], rightSide, labelX };
+      return { it, share, outer, y: elbow[1], rightSide, labelX };
     });
   [true, false].forEach((side) => {
     const group = labelDescs.filter((d) => d.rightSide === side).sort((a, b) => a.y - b.y);
@@ -720,16 +720,14 @@ function renderDonutBody(container, items, colors, opts) {
       if (group[i].y - group[i - 1].y < MIN_LABEL_GAP) group[i].y = group[i - 1].y + MIN_LABEL_GAP;
     }
   });
-  labelDescs.forEach(({ it, share, outer, elbowX, elbowTrueY, y, rightSide, labelX }) => {
+  labelDescs.forEach(({ it, share, outer, y, rightSide, labelX }) => {
     const leader = document.createElementNS(svgNS, 'path');
-    // Three axis-ish segments, not two: ring -> elbow (short radial hop, no
-    // vertical drift yet) -> elbow at the collision-adjusted y (pure
-    // vertical) -> label (pure horizontal). Going straight from the ring
-    // point to the adjusted y in one diagonal line — what a plain 2-segment
-    // path draws once MIN_LABEL_GAP has pushed a label's y away from its
-    // slice's actual angle — can cut clean through a neighboring label's
-    // text.
-    leader.setAttribute('d', 'M' + outer[0].toFixed(1) + ',' + outer[1].toFixed(1) + ' L' + elbowX.toFixed(1) + ',' + elbowTrueY.toFixed(1) + ' L' + elbowX.toFixed(1) + ',' + y.toFixed(1) + ' L' + labelX.toFixed(1) + ',' + y.toFixed(1));
+    // A single straight line from the ring straight to the label — no elbow
+    // bend. The multi-segment version (radial hop + vertical + horizontal)
+    // could kink into a visible triangle/arrow shape for small, closely
+    // packed slices, which read as a rendering glitch rather than a leader
+    // line.
+    leader.setAttribute('d', 'M' + outer[0].toFixed(1) + ',' + outer[1].toFixed(1) + ' L' + labelX.toFixed(1) + ',' + y.toFixed(1));
     leader.setAttribute('fill', 'none'); leader.setAttribute('stroke', 'var(--text-muted)'); leader.setAttribute('stroke-width', '1');
     svg.appendChild(leader);
     const anchorX = labelX + (rightSide ? 3 : -3);
