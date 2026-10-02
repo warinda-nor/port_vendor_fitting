@@ -526,7 +526,8 @@ function renderBarList(container, title, sub, items, opts) {
   const maxVal = Math.max.apply(null, items.map((it) => it.netSales));
   const totalVal = items.reduce((s, it) => s + it.netSales, 0);
   function labelFor(it) { return opts.showShare ? it.k + ' (' + ((it.netSales / totalVal) * 100).toFixed(0) + '%)' : it.k; }
-  const colTemplate = opts.labelWidth ? (opts.labelWidth + 'px 1fr' + (opts.shareColumn ? ' 90px' : '') + ' 82px 72px') : null;
+  const valW = opts.valWidth || 82;
+  const colTemplate = opts.labelWidth ? (opts.labelWidth + 'px 1fr' + (opts.shareColumn ? ' 90px' : '') + (opts.priorColumn ? ' ' + valW + 'px' : '') + ' ' + valW + 'px 72px') : null;
 
   const headerRow = document.createElement('div'); headerRow.className = 'bar-row bar-list-header';
   if (colTemplate) headerRow.style.gridTemplateColumns = colTemplate;
@@ -535,7 +536,10 @@ function renderBarList(container, title, sub, items, opts) {
   if (opts.shareColumn) {
     const shareH = document.createElement('div'); shareH.className = 'col-header'; shareH.textContent = '%Share of Sales'; headerRow.appendChild(shareH);
   }
-  const netH = document.createElement('div'); netH.className = 'col-header'; netH.textContent = 'Net Sales'; headerRow.appendChild(netH);
+  if (opts.priorColumn) {
+    const priorH = document.createElement('div'); priorH.className = 'col-header'; priorH.textContent = 'Net Sales' + (opts.yearPrior ? ' ' + opts.yearPrior : ' Prior'); headerRow.appendChild(priorH);
+  }
+  const netH = document.createElement('div'); netH.className = 'col-header'; netH.textContent = 'Net Sales' + (opts.yearCur ? ' ' + opts.yearCur : ''); headerRow.appendChild(netH);
   const growH = document.createElement('div'); growH.className = 'col-header'; growH.textContent = '%Growth'; headerRow.appendChild(growH);
   container.appendChild(headerRow);
 
@@ -573,6 +577,11 @@ function renderBarList(container, title, sub, items, opts) {
       const shareVal = document.createElement('div'); shareVal.className = 'bar-val'; shareVal.textContent = fmtShare(totalVal ? it.netSales / totalVal : 0, 0);
       if (opts.fontSize) shareVal.style.fontSize = opts.fontSize + 'px';
       row.appendChild(shareVal);
+    }
+    if (opts.priorColumn) {
+      const priorVal = document.createElement('div'); priorVal.className = 'bar-val'; priorVal.textContent = fmtMoney(it.prior || 0);
+      if (opts.fontSize) priorVal.style.fontSize = opts.fontSize + 'px';
+      row.appendChild(priorVal);
     }
     const val = document.createElement('div'); val.className = 'bar-val'; val.textContent = fmtMoney(it.netSales);
     if (opts.fontSize) val.style.fontSize = opts.fontSize + 'px';
@@ -1091,8 +1100,9 @@ function renderDashboard(DATA) {
   ]);
 
   // Row 3: Sales by Sales Office + Net Sales Trend
-  clearAndRun('chart-office', (el) => renderBarList(el, 'Sales by Sales Office', 'Net Sales, THB', DATA.office, {
-    showShare: true, colorFor: () => '#87CEFA', labelWidth: 150, compact: true, trackHeight: 10, fontSize: 12, fillHeight: true,
+  clearAndRun('chart-office', (el) => renderBarList(el, 'Sales by Sales Office', 'Net Sales, THB · ' + yearCur + ' vs ' + yearPrior, DATA.office, {
+    priorColumn: true, yearCur, yearPrior, valWidth: 74,
+    showShare: true, colorFor: () => '#87CEFA', labelWidth: 140, compact: true, trackHeight: 10, fontSize: 12, fillHeight: true,
   }));
   const trendMonths = DATA.trend.months;
   const trendRangeLabel = trendMonths.length > 1 ? (trendMonths[0] + '–' + trendMonths[trendMonths.length - 1]) : (trendMonths[0] || '—');
